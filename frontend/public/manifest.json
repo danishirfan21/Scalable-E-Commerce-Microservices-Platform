@@ -1,0 +1,9 @@
+{
+  "short_name": "E-Commerce",
+  "name": "E-Commerce Platform",
+  "icons": [],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#1976d2",
+  "background_color": "#ffffff"
+}
