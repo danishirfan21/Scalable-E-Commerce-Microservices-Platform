@@ -72,11 +72,11 @@ services:
     networks:
       - ecommerce-network
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8888/actuator/health"]
-      interval: 30s
-      timeout: 10s
+      test: ["CMD", "curl", "-sf", "http://localhost:8888/actuator/health"]
+      interval: 10s
+      timeout: 5s
       retries: 5
-      start_period: 40s
+      start_period: 60s
 
   # Eureka Server
   eureka-server:
@@ -91,9 +91,9 @@ services:
     networks:
       - ecommerce-network
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8761/actuator/health"]
-      interval: 30s
-      timeout: 10s
+      test: ["CMD", "curl", "-sf", "http://localhost:8761/actuator/health"]
+      interval: 10s
+      timeout: 5s
       retries: 5
       start_period: 60s
     depends_on:
@@ -119,14 +119,16 @@ services:
     networks:
       - ecommerce-network
     depends_on:
-      postgres-user:
+      config-server:
         condition: service_healthy
       eureka-server:
         condition: service_healthy
+      postgres-user:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8081/actuator/health"]
-      interval: 30s
-      timeout: 10s
+      test: ["CMD", "curl", "-sf", "http://localhost:8081/actuator/health"]
+      interval: 10s
+      timeout: 5s
       retries: 5
       start_period: 60s
 
@@ -148,14 +150,16 @@ services:
     networks:
       - ecommerce-network
     depends_on:
-      postgres-product:
+      config-server:
         condition: service_healthy
       eureka-server:
         condition: service_healthy
+      postgres-product:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8082/actuator/health"]
-      interval: 30s
-      timeout: 10s
+      test: ["CMD", "curl", "-sf", "http://localhost:8082/actuator/health"]
+      interval: 10s
+      timeout: 5s
       retries: 5
       start_period: 60s
 
@@ -177,18 +181,16 @@ services:
     networks:
       - ecommerce-network
     depends_on:
-      postgres-order:
+      config-server:
         condition: service_healthy
       eureka-server:
         condition: service_healthy
-      product-service:
-        condition: service_healthy
-      user-service:
+      postgres-order:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8083/actuator/health"]
-      interval: 30s
-      timeout: 10s
+      test: ["CMD", "curl", "-sf", "http://localhost:8083/actuator/health"]
+      interval: 10s
+      timeout: 5s
       retries: 5
       start_period: 60s
 
@@ -208,6 +210,8 @@ services:
     networks:
       - ecommerce-network
     depends_on:
+      config-server:
+        condition: service_healthy
       eureka-server:
         condition: service_healthy
       user-service:
@@ -217,9 +221,9 @@ services:
       order-service:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/actuator/health"]
-      interval: 30s
-      timeout: 10s
+      test: ["CMD", "curl", "-sf", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
       retries: 5
       start_period: 60s
 
@@ -236,7 +240,8 @@ services:
     networks:
       - ecommerce-network
     depends_on:
-      - api-gateway
+      api-gateway:
+        condition: service_healthy
 
 networks:
   ecommerce-network:
