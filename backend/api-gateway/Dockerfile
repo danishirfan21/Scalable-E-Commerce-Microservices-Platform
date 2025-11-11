@@ -3,12 +3,15 @@ FROM maven:3.9.5-eclipse-temurin-17 AS build
 
 WORKDIR /app
 
-# Copy parent pom first
-COPY ../pom.xml ../pom.xml
-COPY pom.xml .
+# Copy and install parent POM first (before service POM to avoid resolution issues)
+COPY pom.xml ./parent-pom.xml
+RUN mvn -N install:install-file \
+  -Dfile=parent-pom.xml \
+  -DpomFile=parent-pom.xml
 
-# Copy source code
-COPY src src
+# Copy service POM and source code
+COPY api-gateway/pom.xml ./pom.xml
+COPY api-gateway/src ./src
 
 # Build the application
 RUN mvn clean package -DskipTests

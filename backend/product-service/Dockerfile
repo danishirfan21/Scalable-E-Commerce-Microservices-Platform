@@ -6,14 +6,15 @@ FROM maven:3.9.5-eclipse-temurin-17 AS build
 # Set working directory
 WORKDIR /app
 
-# Copy Maven configuration files
-COPY pom.xml .
+# Copy and install parent POM first (before service POM to avoid resolution issues)
+COPY pom.xml ./parent-pom.xml
+RUN mvn -N install:install-file \
+  -Dfile=parent-pom.xml \
+  -DpomFile=parent-pom.xml
 
-# Download dependencies (cached layer)
-RUN mvn dependency:go-offline -B
-
-# Copy source code
-COPY src ./src
+# Copy service POM and source code
+COPY product-service/pom.xml ./pom.xml
+COPY product-service/src ./src
 
 # Build application
 RUN mvn clean package -DskipTests -B
