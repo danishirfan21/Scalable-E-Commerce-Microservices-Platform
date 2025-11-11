@@ -1,0 +1,17 @@
+/home/runner/work/Scalable-E-Commerce-Microservices-Platform/Scalable-E-Commerce-Microservices-Platform/backend/user-service/src/main/java/com/ecommerce/user/dto/AuthResponse.java
+/home/runner/work/Scalable-E-Commerce-Microservices-Platform/Scalable-E-Commerce-Microservices-Platform/backend/user-service/src/main/java/com/ecommerce/user/exception/DuplicateResourceException.java
+/home/runner/work/Scalable-E-Commerce-Microservices-Platform/Scalable-E-Commerce-Microservices-Platform/backend/user-service/src/main/java/com/ecommerce/user/controller/AuthController.java
+/home/runner/work/Scalable-E-Commerce-Microservices-Platform/Scalable-E-Commerce-Microservices-Platform/backend/user-service/src/main/java/com/ecommerce/user/exception/GlobalExceptionHandler.java
+/home/runner/work/Scalable-E-Commerce-Microservices-Platform/Scalable-E-Commerce-Microservices-Platform/backend/user-service/src/main/java/com/ecommerce/user/repository/UserRepository.java
+/home/runner/work/Scalable-E-Commerce-Microservices-Platform/Scalable-E-Commerce-Microservices-Platform/backend/user-service/src/main/java/com/ecommerce/user/model/User.java
+/home/runner/work/Scalable-E-Commerce-Microservices-Platform/Scalable-E-Commerce-Microservices-Platform/backend/user-service/src/main/java/com/ecommerce/user/service/UserServiceImpl.java
+/home/runner/work/Scalable-E-Commerce-Microservices-Platform/Scalable-E-Commerce-Microservices-Platform/backend/user-service/src/main/java/com/ecommerce/user/dto/LoginRequest.java
+/home/runner/work/Scalable-E-Commerce-Microservices-Platform/Scalable-E-Commerce-Microservices-Platform/backend/user-service/src/main/java/com/ecommerce/user/dto/RegisterRequest.java
+/home/runner/work/Scalable-E-Commerce-Microservices-Platform/Scalable-E-Commerce-Microservices-Platform/backend/user-service/src/main/java/com/ecommerce/user/UserServiceApplication.java
+/home/runner/work/Scalable-E-Commerce-Microservices-Platform/Scalable-E-Commerce-Microservices-Platform/backend/user-service/src/main/java/com/ecommerce/user/config/SecurityConfig.java
+/home/runner/work/Scalable-E-Commerce-Microservices-Platform/Scalable-E-Commerce-Microservices-Platform/backend/user-service/src/main/java/com/ecommerce/user/dto/UserResponse.java
+/home/runner/work/Scalable-E-Commerce-Microservices-Platform/Scalable-E-Commerce-Microservices-Platform/backend/user-service/src/main/java/com/ecommerce/user/exception/ResourceNotFoundException.java
+/home/runner/work/Scalable-E-Commerce-Microservices-Platform/Scalable-E-Commerce-Microservices-Platform/backend/user-service/src/main/java/com/ecommerce/user/service/UserService.java
+/home/runner/work/Scalable-E-Commerce-Microservices-Platform/Scalable-E-Commerce-Microservices-Platform/backend/user-service/src/main/java/com/ecommerce/user/controller/UserController.java
+/home/runner/work/Scalable-E-Commerce-Microservices-Platform/Scalable-E-Commerce-Microservices-Platform/backend/user-service/src/main/java/com/ecommerce/user/security/CustomUserDetailsService.java
+/home/runner/work/Scalable-E-Commerce-Microservices-Platform/Scalable-E-Commerce-Microservices-Platform/backend/user-service/src/main/java/com/ecommerce/user/security/JwtTokenProvider.java
