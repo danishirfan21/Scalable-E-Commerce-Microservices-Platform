@@ -1,5 +1,0 @@
-com/ecommerce/gateway/filter/AuthenticationFilter$Config.class
-com/ecommerce/gateway/filter/AuthenticationFilter.class
-com/ecommerce/gateway/config/CorsConfig.class
-com/ecommerce/gateway/ApiGatewayApplication.class
-com/ecommerce/gateway/util/JwtUtil.class
