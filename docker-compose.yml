@@ -72,11 +72,11 @@ services:
     networks:
       - ecommerce-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8888/actuator/health"]
+      test: ["CMD", "curl", "-sf", "http://localhost:8888/actuator/health"]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 40s
+      start_period: 60s
 
   # Eureka Server
   eureka-server:
@@ -91,7 +91,7 @@ services:
     networks:
       - ecommerce-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
+      test: ["CMD", "curl", "-sf", "http://localhost:8761/actuator/health"]
       interval: 10s
       timeout: 5s
       retries: 5

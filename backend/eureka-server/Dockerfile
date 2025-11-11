@@ -31,8 +31,8 @@ EXPOSE 8761
 ENV JAVA_OPTS=""
 
 # Health check
-HEALTHCHECK --interval=10s --timeout=5s --start-period=60s --retries=5 \
-  CMD curl -f http://localhost:8761/actuator/health || exit 1
+HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=5 \
+  CMD curl -sf http://localhost:8761/actuator/health || exit 1
 
 # Run the application
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
