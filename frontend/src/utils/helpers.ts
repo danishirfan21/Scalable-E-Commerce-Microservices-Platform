@@ -80,8 +80,20 @@ export const generateOrderId = (id: number): string => {
 /**
  * Check if user has admin role
  */
-export const isAdmin = (role: string): boolean => {
-  return role === 'ADMIN';
+export const isAdmin = (role: string | string[]): boolean => {
+  // Handle array of roles (backend format)
+  if (Array.isArray(role)) {
+    return role.some(r => 
+      r === 'ADMIN' || 
+      r === 'ROLE_ADMIN' ||
+      r.toUpperCase() === 'ADMIN' ||
+      r.toUpperCase() === 'ROLE_ADMIN'
+    );
+  }
+  
+  // Handle single role string
+  const roleUpper = role.toUpperCase();
+  return roleUpper === 'ADMIN' || roleUpper === 'ROLE_ADMIN';
 };
 
 /**

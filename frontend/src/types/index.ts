@@ -17,6 +17,8 @@ export interface User {
 export enum UserRole {
   USER = 'USER',
   ADMIN = 'ADMIN',
+  ROLE_USER = 'ROLE_USER',
+  ROLE_ADMIN = 'ROLE_ADMIN',
 }
 
 export interface AuthState {
@@ -54,6 +56,7 @@ export interface Product {
   stockQuantity: number;
   category: string;
   imageUrl?: string;
+  sku?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -74,6 +77,7 @@ export interface CreateProductRequest {
   stockQuantity: number;
   category: string;
   imageUrl?: string;
+  sku?: string;
 }
 
 export interface UpdateProductRequest extends Partial<CreateProductRequest> {
@@ -102,7 +106,7 @@ export interface Order {
 
 export enum OrderStatus {
   PENDING = 'PENDING',
-  PROCESSING = 'PROCESSING',
+  CONFIRMED = 'CONFIRMED',
   SHIPPED = 'SHIPPED',
   DELIVERED = 'DELIVERED',
   CANCELLED = 'CANCELLED',
@@ -173,6 +177,7 @@ export interface ProductFormValues {
   stockQuantity: number | string;
   category: string;
   imageUrl?: string;
+  sku?: string;
 }
 
 export interface ProfileFormValues {

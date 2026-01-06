@@ -44,7 +44,7 @@ export const API_ENDPOINTS = {
 
 export const ORDER_STATUS_COLORS: Record<string, string> = {
   PENDING: '#FFA500',
-  PROCESSING: '#2196F3',
+  CONFIRMED: '#2196F3',
   SHIPPED: '#9C27B0',
   DELIVERED: '#4CAF50',
   CANCELLED: '#F44336',
