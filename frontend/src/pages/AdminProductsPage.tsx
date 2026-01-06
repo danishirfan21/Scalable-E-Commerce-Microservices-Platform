@@ -31,7 +31,6 @@ import { Product } from '../types';
 import ProductCard from '../components/ProductCard';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { PRODUCT_CATEGORIES } from '../utils/constants';
-import { toast } from 'react-toastify';
 
 // Validation schema
 const validationSchema = Yup.object({

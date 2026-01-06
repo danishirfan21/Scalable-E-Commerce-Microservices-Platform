@@ -56,7 +56,7 @@ export const register = createAsyncThunk(
 /**
  * Logout user
  */
-export const logout = createAsyncThunk('auth/logout', async (_, { rejectWithValue }) => {
+export const logout = createAsyncThunk('auth/logout', async () => {
   try {
     await authAPI.logout();
   } catch (error: any) {

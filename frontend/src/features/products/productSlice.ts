@@ -2,7 +2,7 @@
  * Redux slice for product state management
  */
 
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { productAPI } from '../../api/endpoints';
 import { ProductState, CreateProductRequest, UpdateProductRequest } from '../../types';
 import { toast } from 'react-toastify';

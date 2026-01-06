@@ -83,11 +83,12 @@ export const generateOrderId = (id: number): string => {
 export const isAdmin = (role: string | string[]): boolean => {
   // Handle array of roles (backend format)
   if (Array.isArray(role)) {
-    return role.some(r => 
-      r === 'ADMIN' || 
-      r === 'ROLE_ADMIN' ||
-      r.toUpperCase() === 'ADMIN' ||
-      r.toUpperCase() === 'ROLE_ADMIN'
+    return role.some(
+      (r) =>
+        r === 'ADMIN' ||
+        r === 'ROLE_ADMIN' ||
+        r.toUpperCase() === 'ADMIN' ||
+        r.toUpperCase() === 'ROLE_ADMIN'
     );
   }
   

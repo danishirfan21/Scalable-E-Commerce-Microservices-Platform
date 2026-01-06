@@ -3,7 +3,7 @@
  */
 
 import authReducer, { clearError, login, logout } from './authSlice';
-import { AuthState } from '../../types';
+import { AuthState, UserRole } from '../../types';
 
 describe('authSlice', () => {
   const initialState: AuthState = {
@@ -41,7 +41,7 @@ describe('authSlice', () => {
       username: 'testuser',
       firstName: 'Test',
       lastName: 'User',
-      role: 'USER' as const,
+      role: UserRole.USER,
     };
 
     const mockPayload = {
@@ -82,7 +82,7 @@ describe('authSlice', () => {
         username: 'testuser',
         firstName: 'Test',
         lastName: 'User',
-        role: 'USER',
+        role: UserRole.USER,
       },
       token: 'mock-token',
       isAuthenticated: true,
