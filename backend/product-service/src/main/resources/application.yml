@@ -35,6 +35,12 @@ spring:
         order_updates: true
     open-in-view: false
 
+  # SQL Init Configuration
+  sql:
+    init:
+      mode: always
+      data-locations: classpath:data.sql
+
   # Jackson Configuration
   jackson:
     serialization:

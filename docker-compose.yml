@@ -62,8 +62,8 @@ services:
   # Config Server
   config-server:
     build:
-      context: ./backend/config-server
-      dockerfile: Dockerfile
+      context: ./backend
+      dockerfile: config-server/Dockerfile
     container_name: ecommerce-config-server
     ports:
       - "8888:8888"
@@ -72,17 +72,17 @@ services:
     networks:
       - ecommerce-network
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8888/actuator/health"]
-      interval: 30s
-      timeout: 10s
+      test: ["CMD", "curl", "-sf", "http://localhost:8888/actuator/health"]
+      interval: 10s
+      timeout: 5s
       retries: 5
-      start_period: 40s
+      start_period: 60s
 
   # Eureka Server
   eureka-server:
     build:
-      context: ./backend/eureka-server
-      dockerfile: Dockerfile
+      context: ./backend
+      dockerfile: eureka-server/Dockerfile
     container_name: ecommerce-eureka-server
     ports:
       - "8761:8761"
@@ -91,9 +91,9 @@ services:
     networks:
       - ecommerce-network
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8761/actuator/health"]
-      interval: 30s
-      timeout: 10s
+      test: ["CMD", "curl", "-sf", "http://localhost:8761/actuator/health"]
+      interval: 10s
+      timeout: 5s
       retries: 5
       start_period: 60s
     depends_on:
@@ -103,8 +103,8 @@ services:
   # User Service
   user-service:
     build:
-      context: ./backend/user-service
-      dockerfile: Dockerfile
+      context: ./backend
+      dockerfile: user-service/Dockerfile
     container_name: ecommerce-user-service
     ports:
       - "8081:8081"
@@ -119,22 +119,24 @@ services:
     networks:
       - ecommerce-network
     depends_on:
-      postgres-user:
+      config-server:
         condition: service_healthy
       eureka-server:
         condition: service_healthy
+      postgres-user:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8081/actuator/health"]
-      interval: 30s
-      timeout: 10s
+      test: ["CMD", "curl", "-sf", "http://localhost:8081/actuator/health"]
+      interval: 10s
+      timeout: 5s
       retries: 5
       start_period: 60s
 
   # Product Service
   product-service:
     build:
-      context: ./backend/product-service
-      dockerfile: Dockerfile
+      context: ./backend
+      dockerfile: product-service/Dockerfile
     container_name: ecommerce-product-service
     ports:
       - "8082:8082"
@@ -148,22 +150,24 @@ services:
     networks:
       - ecommerce-network
     depends_on:
-      postgres-product:
+      config-server:
         condition: service_healthy
       eureka-server:
         condition: service_healthy
+      postgres-product:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8082/actuator/health"]
-      interval: 30s
-      timeout: 10s
+      test: ["CMD", "curl", "-sf", "http://localhost:8082/actuator/health"]
+      interval: 10s
+      timeout: 5s
       retries: 5
       start_period: 60s
 
   # Order Service
   order-service:
     build:
-      context: ./backend/order-service
-      dockerfile: Dockerfile
+      context: ./backend
+      dockerfile: order-service/Dockerfile
     container_name: ecommerce-order-service
     ports:
       - "8083:8083"
@@ -177,26 +181,24 @@ services:
     networks:
       - ecommerce-network
     depends_on:
-      postgres-order:
+      config-server:
         condition: service_healthy
       eureka-server:
         condition: service_healthy
-      product-service:
-        condition: service_healthy
-      user-service:
+      postgres-order:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8083/actuator/health"]
-      interval: 30s
-      timeout: 10s
+      test: ["CMD", "curl", "-sf", "http://localhost:8083/actuator/health"]
+      interval: 10s
+      timeout: 5s
       retries: 5
       start_period: 60s
 
   # API Gateway
   api-gateway:
     build:
-      context: ./backend/api-gateway
-      dockerfile: Dockerfile
+      context: ./backend
+      dockerfile: api-gateway/Dockerfile
     container_name: ecommerce-api-gateway
     ports:
       - "8080:8080"
@@ -208,6 +210,8 @@ services:
     networks:
       - ecommerce-network
     depends_on:
+      config-server:
+        condition: service_healthy
       eureka-server:
         condition: service_healthy
       user-service:
@@ -217,9 +221,9 @@ services:
       order-service:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/actuator/health"]
-      interval: 30s
-      timeout: 10s
+      test: ["CMD", "curl", "-sf", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
       retries: 5
       start_period: 60s
 
@@ -236,7 +240,8 @@ services:
     networks:
       - ecommerce-network
     depends_on:
-      - api-gateway
+      api-gateway:
+        condition: service_healthy
 
 networks:
   ecommerce-network:
