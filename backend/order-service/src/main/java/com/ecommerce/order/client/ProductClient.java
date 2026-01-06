@@ -5,45 +5,51 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * Feign client for communicating with Product Service.
+ * Feign Client for Product Service
+ * Handles all product-related operations from Order Service
  */
 @FeignClient(name = "product-service")
 public interface ProductClient {
 
     /**
-     * Retrieves product details by ID.
-     *
-     * @param id the product ID
-     * @return the product details
+     * Get product details by ID
+     * @param id Product ID
+     * @return Product details
      */
     @GetMapping("/api/products/{id}")
     ProductResponse getProduct(@PathVariable("id") Long id);
 
     /**
-     * Checks if sufficient stock is available for a product.
-     *
-     * @param id the product ID
-     * @param quantity the required quantity
+     * Check if product has sufficient stock
+     * @param id Product ID
+     * @param quantity Quantity to check
      * @return true if stock is available, false otherwise
      */
     @GetMapping("/api/products/{id}/check-stock")
-    Boolean checkStock(@PathVariable("id") Long id, @RequestParam("quantity") Integer quantity);
+    Boolean checkStock(
+        @PathVariable("id") Long id, 
+        @RequestParam("quantity") Integer quantity
+    );
 
     /**
-     * Reduces inventory for a product (called when order is confirmed).
-     *
-     * @param id the product ID
-     * @param quantity the quantity to reduce
+     * Reduce product inventory (called when order is placed)
+     * @param id Product ID
+     * @param amount Amount to reduce
      */
-    @PutMapping("/api/products/{id}/reduce-inventory")
-    void reduceInventory(@PathVariable("id") Long id, @RequestParam("quantity") Integer quantity);
+    @PatchMapping("/api/products/{id}/reduce-inventory")
+    void reduceInventory(
+        @PathVariable("id") Long id, 
+        @RequestParam("amount") Integer amount
+    );
 
     /**
-     * Restores inventory for a product (called when order is cancelled).
-     *
-     * @param id the product ID
-     * @param quantity the quantity to restore
+     * Restore product inventory (called when order is cancelled)
+     * @param id Product ID
+     * @param quantity Quantity to restore
      */
     @PutMapping("/api/products/{id}/restore-inventory")
-    void restoreInventory(@PathVariable("id") Long id, @RequestParam("quantity") Integer quantity);
+    void restoreInventory(
+        @PathVariable("id") Long id, 
+        @RequestParam("quantity") Integer quantity
+    );
 }

@@ -243,4 +243,58 @@ public class ProductController {
         List<ProductResponse> responses = productService.getLowStockProducts(threshold);
         return ResponseEntity.ok(responses);
     }
+
+    /**
+     * Check if product has sufficient stock
+     */
+    @GetMapping("/{id}/check-stock")
+    @Operation(summary = "Check product stock availability")
+    public ResponseEntity<Boolean> checkStock(
+            @Parameter(description = "Product ID") @PathVariable Long id,
+            @Parameter(description = "Quantity to check") @RequestParam Integer quantity) {
+        
+        log.info("Checking stock for product ID: {} with quantity: {}", id, quantity);
+        
+        try {
+            ProductResponse product = productService.getProductById(id);
+            boolean hasStock = product.getQuantity() >= quantity;
+            log.info("Stock check result for product ID {}: {}", id, hasStock);
+            return ResponseEntity.ok(hasStock);
+        } catch (Exception e) {
+            log.error("Error checking stock for product ID: {}", id, e);
+            return ResponseEntity.ok(false);
+        }
+    }
+
+    /**
+     * Restore product inventory (when order is cancelled)
+     */
+    @PutMapping("/{id}/restore-inventory")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('ORDER_SERVICE')")
+    @Operation(summary = "Restore product inventory")
+    public ResponseEntity<ProductResponse> restoreInventory(
+            @Parameter(description = "Product ID") @PathVariable Long id,
+            @Parameter(description = "Quantity to restore") @RequestParam @Min(1) Integer quantity) {
+        
+        log.info("Restoring inventory for product ID: {} by quantity: {}", id, quantity);
+        
+        try {
+            // Get current product
+            ProductResponse currentProduct = productService.getProductById(id);
+            
+            // Calculate new quantity
+            int newQuantity = currentProduct.getQuantity() + quantity;
+            
+            // Update inventory
+            ProductResponse response = productService.updateInventory(id, newQuantity);
+            
+            log.info("Successfully restored inventory for product ID: {}. New quantity: {}", 
+                    id, response.getQuantity());
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Error restoring inventory for product ID: {}", id, e);
+            throw e;
+        }
+    }
 }
