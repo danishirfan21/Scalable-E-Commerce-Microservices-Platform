@@ -1,6 +1,10 @@
 package com.ecommerce.product.model;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -17,6 +21,10 @@ import java.time.LocalDateTime;
         @Index(name = "idx_sku", columnList = "sku", unique = true),
         @Index(name = "idx_name", columnList = "name")
 })
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @EntityListeners(AuditingEntityListener.class)
 public class Product {
 
@@ -53,42 +61,6 @@ public class Product {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
-    public Product() {}
-
-    public Product(Long id, String name, String description, BigDecimal price, Integer quantity, String category, String imageUrl, String sku, LocalDateTime createdAt, LocalDateTime updatedAt) {
-        this.id = id;
-        this.name = name;
-        this.description = description;
-        this.price = price;
-        this.quantity = quantity;
-        this.category = category;
-        this.imageUrl = imageUrl;
-        this.sku = sku;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-    }
-
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
-    public BigDecimal getPrice() { return price; }
-    public void setPrice(BigDecimal price) { this.price = price; }
-    public Integer getQuantity() { return quantity; }
-    public void setQuantity(Integer quantity) { this.quantity = quantity; }
-    public String getCategory() { return category; }
-    public void setCategory(String category) { this.category = category; }
-    public String getImageUrl() { return imageUrl; }
-    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
-    public String getSku() { return sku; }
-    public void setSku(String sku) { this.sku = sku; }
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
-    public LocalDateTime getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
-
     /**
      * Check if product is in stock
      */
@@ -119,39 +91,5 @@ public class Product {
      */
     public void increaseQuantity(int amount) {
         this.quantity += amount;
-    }
-
-    public static ProductBuilder builder() {
-        return new ProductBuilder();
-    }
-
-    public static class ProductBuilder {
-        private Long id;
-        private String name;
-        private String description;
-        private BigDecimal price;
-        private Integer quantity;
-        private String category;
-        private String imageUrl;
-        private String sku;
-        private LocalDateTime createdAt;
-        private LocalDateTime updatedAt;
-
-        ProductBuilder() {}
-
-        public ProductBuilder id(Long id) { this.id = id; return this; }
-        public ProductBuilder name(String name) { this.name = name; return this; }
-        public ProductBuilder description(String description) { this.description = description; return this; }
-        public ProductBuilder price(BigDecimal price) { this.price = price; return this; }
-        public ProductBuilder quantity(Integer quantity) { this.quantity = quantity; return this; }
-        public ProductBuilder category(String category) { this.category = category; return this; }
-        public ProductBuilder imageUrl(String imageUrl) { this.imageUrl = imageUrl; return this; }
-        public ProductBuilder sku(String sku) { this.sku = sku; return this; }
-        public ProductBuilder createdAt(LocalDateTime createdAt) { this.createdAt = createdAt; return this; }
-        public ProductBuilder updatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; return this; }
-
-        public Product build() {
-            return new Product(id, name, description, price, quantity, category, imageUrl, sku, createdAt, updatedAt);
-        }
     }
 }

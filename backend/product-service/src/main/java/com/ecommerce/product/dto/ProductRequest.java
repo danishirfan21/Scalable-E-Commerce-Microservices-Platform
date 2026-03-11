@@ -1,12 +1,20 @@
 package com.ecommerce.product.dto;
 
 import jakarta.validation.constraints.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 
 /**
  * DTO for creating or updating a product
  */
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class ProductRequest {
 
     @NotBlank(message = "Product name is required")
@@ -39,31 +47,4 @@ public class ProductRequest {
     @Size(min = 3, max = 100, message = "SKU must be between 3 and 100 characters")
     @Pattern(regexp = "^[A-Z0-9-]+$", message = "SKU must contain only uppercase letters, numbers, and hyphens")
     private String sku;
-
-    public ProductRequest() {}
-
-    public ProductRequest(String name, String description, BigDecimal price, Integer quantity, String category, String imageUrl, String sku) {
-        this.name = name;
-        this.description = description;
-        this.price = price;
-        this.quantity = quantity;
-        this.category = category;
-        this.imageUrl = imageUrl;
-        this.sku = sku;
-    }
-
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
-    public BigDecimal getPrice() { return price; }
-    public void setPrice(BigDecimal price) { this.price = price; }
-    public Integer getQuantity() { return quantity; }
-    public void setQuantity(Integer quantity) { this.quantity = quantity; }
-    public String getCategory() { return category; }
-    public void setCategory(String category) { this.category = category; }
-    public String getImageUrl() { return imageUrl; }
-    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
-    public String getSku() { return sku; }
-    public void setSku(String sku) { this.sku = sku; }
 }

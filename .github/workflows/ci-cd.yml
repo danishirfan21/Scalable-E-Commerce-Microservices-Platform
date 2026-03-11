@@ -16,6 +16,10 @@ jobs:
   backend-build:
     name: Backend Build & Test
     runs-on: ubuntu-latest
+    permissions:
+      checks: write
+      pull-requests: write
+      contents: read
 
     strategy:
       matrix:
@@ -67,6 +71,7 @@ jobs:
           flags: ${{ matrix.service }}
           name: codecov-${{ matrix.service }}
           token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
 
   # Code Quality Analysis
   code-quality:
@@ -128,17 +133,17 @@ jobs:
       - name: Run ESLint
         run: |
           cd frontend
-          DISABLE_ESLINT_PLUGIN=true npm run lint || true
+          npm run lint || true
 
       - name: Run Tests
         run: |
           cd frontend
-          CI=true DISABLE_ESLINT_PLUGIN=true npm test -- --coverage --watchAll=false
+          CI=true npm test -- --coverage --watchAll=false
 
       - name: Build Frontend
         run: |
           cd frontend
-          DISABLE_ESLINT_PLUGIN=true npm run build
+          npm run build
 
       - name: Upload Frontend Build
         uses: actions/upload-artifact@v4
@@ -170,6 +175,11 @@ jobs:
           curl -f http://localhost:8081/actuator/health || echo "User Service not healthy"
           curl -f http://localhost:8082/actuator/health || echo "Product Service not healthy"
           curl -f http://localhost:8083/actuator/health || echo "Order Service not healthy"
+
+      - name: Run API Tests
+        run: |
+          npm install -g newman
+          newman run docs/postman_collection.json || echo "Newman tests failed"
 
       - name: Stop services
         if: always()
