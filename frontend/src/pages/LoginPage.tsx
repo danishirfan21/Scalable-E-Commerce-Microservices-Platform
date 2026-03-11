@@ -51,6 +51,7 @@ const LoginPage: React.FC = () => {
       password: '',
     },
     validationSchema,
+    validateOnMount: true,
     onSubmit: async (values) => {
       await dispatch(login(values));
     },

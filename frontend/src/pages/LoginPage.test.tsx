@@ -3,7 +3,7 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { BrowserRouter } from 'react-router-dom';
 import { configureStore } from '@reduxjs/toolkit';
@@ -21,18 +21,22 @@ const createMockStore = (initialState = {}) => {
 };
 
 // Helper to render with providers
-const renderWithProviders = (component: React.ReactElement, initialState = {}) => {
+const renderWithProviders = async (component: React.ReactElement, initialState = {}) => {
   const store = createMockStore(initialState);
-  return render(
-    <Provider store={store}>
-      <BrowserRouter>{component}</BrowserRouter>
-    </Provider>
-  );
+  let result: any;
+  await act(async () => {
+    result = render(
+      <Provider store={store}>
+        <BrowserRouter>{component}</BrowserRouter>
+      </Provider>
+    );
+  });
+  return result;
 };
 
 describe('LoginPage', () => {
-  test('renders login form', () => {
-    renderWithProviders(<LoginPage />);
+  test('renders login form', async () => {
+    await renderWithProviders(<LoginPage />);
 
     expect(screen.getByRole('heading', { name: /sign in/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/email address/i)).toBeInTheDocument();
@@ -41,17 +45,19 @@ describe('LoginPage', () => {
   });
 
   test('displays validation errors for invalid inputs', async () => {
-    renderWithProviders(<LoginPage />);
+    await renderWithProviders(<LoginPage />);
 
     const emailInput = screen.getByLabelText(/email address/i);
     const passwordInput = screen.getByLabelText(/password/i);
 
     // Touch fields and blur to trigger validation
-    fireEvent.change(emailInput, { target: { value: 'invalid-email' } });
-    fireEvent.blur(emailInput);
+    await act(async () => {
+      fireEvent.change(emailInput, { target: { value: 'invalid-email' } });
+      fireEvent.blur(emailInput);
 
-    fireEvent.change(passwordInput, { target: { value: '123' } });
-    fireEvent.blur(passwordInput);
+      fireEvent.change(passwordInput, { target: { value: '123' } });
+      fireEvent.blur(passwordInput);
+    });
 
     await waitFor(() => {
       expect(screen.getByText(/invalid email address/i)).toBeInTheDocument();
@@ -59,15 +65,17 @@ describe('LoginPage', () => {
     });
   });
 
-  test('submit button is disabled when form is invalid', () => {
-    renderWithProviders(<LoginPage />);
+  test('submit button is disabled when form is invalid', async () => {
+    await renderWithProviders(<LoginPage />);
 
     const submitButton = screen.getByRole('button', { name: /sign in/i });
-    expect(submitButton).toBeDisabled();
+    await waitFor(() => {
+        expect(submitButton).toBeDisabled();
+    });
   });
 
-  test('displays link to registration page', () => {
-    renderWithProviders(<LoginPage />);
+  test('displays link to registration page', async () => {
+    await renderWithProviders(<LoginPage />);
 
     const registerLink = screen.getByText(/don't have an account\? sign up/i);
     expect(registerLink).toBeInTheDocument();

@@ -1,0 +1,69 @@
+# Compiled class file
+*.class
+
+# Log files
+*.log
+
+# BlueJ files
+*.ctxt
+
+# Mobile Tools for Java (J2ME)
+.mtj.tmp/
+
+# Package Files #
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# virtual machine crash logs, see http://www.oracle.com/technetwork/java/javase/troubleshoot-136150.html#g6127
+hs_err_pid*
+
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.restore
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+# https://github.com/takari/maven-wrapper#usage-without-binary-jar
+.mvn/wrapper/maven-wrapper.jar
+
+# Gradle
+.gradle
+/build/
+
+# IDEs
+.settings/
+.project
+.classpath
+.factorypath
+.idea/
+*.iml
+*.iws
+.vscode/
+.nb-commonrc
+
+# Node
+node_modules/
+dist/
+build/
+.npm
+.eslintcache
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
