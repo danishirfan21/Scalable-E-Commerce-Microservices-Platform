@@ -27,7 +27,8 @@ const LoginPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const { isAuthenticated, loading } = useAppSelector((state) => state.auth);
 
-  const from = (location.state as any)?.from?.pathname || ROUTES.PRODUCTS;
+  const from =
+    (location.state as { from?: { pathname: string } })?.from?.pathname || ROUTES.PRODUCTS;
 
   // Redirect if already authenticated
   useEffect(() => {

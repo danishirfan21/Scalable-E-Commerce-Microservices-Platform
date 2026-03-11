@@ -78,8 +78,10 @@ jobs:
     name: Code Quality Analysis
     runs-on: ubuntu-latest
     needs: backend-build
-    # Skip SonarCloud as it probably won't have credentials in this environment
-    if: github.event.pull_request.head.repo.full_name == github.repository
+    # Skip SonarCloud if secrets are not available
+    if: |
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name == github.repository
 
     steps:
       - name: Checkout code
@@ -101,6 +103,7 @@ jobs:
           restore-keys: ${{ runner.os }}-sonar
 
       - name: SonarCloud Scan
+        if: secrets.SONAR_TOKEN != ''
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -214,8 +217,8 @@ jobs:
     name: Build and Push Docker Images
     runs-on: ubuntu-latest
     needs: [backend-build, frontend-build]
-    # Skip push as we don't have credentials
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && github.repository_owner == 'your-org'
+    # Skip push if credentials are not available
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
     strategy:
       matrix:
@@ -229,6 +232,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Login to Docker Hub
+        if: secrets.DOCKER_USERNAME != ''
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
@@ -247,6 +251,7 @@ jobs:
             type=sha
 
       - name: Build and push
+        if: secrets.DOCKER_USERNAME != ''
         uses: docker/build-push-action@v5
         with:
           context: ${{ matrix.service == 'frontend' && './frontend' || format('./backend/{0}', matrix.service) }}

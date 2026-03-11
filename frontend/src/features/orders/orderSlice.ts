@@ -25,8 +25,9 @@ export const createOrder = createAsyncThunk(
     try {
       const response = await orderAPI.createOrder(orderData);
       return response;
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to create order');
+    } catch (error: unknown) {
+      const err = error as { message?: string };
+      return rejectWithValue(err.message || 'Failed to create order');
     }
   }
 );
@@ -40,8 +41,9 @@ export const fetchUserOrders = createAsyncThunk(
     try {
       const response = await orderAPI.getUserOrders();
       return response;
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to fetch orders');
+    } catch (error: unknown) {
+      const err = error as { message?: string };
+      return rejectWithValue(err.message || 'Failed to fetch orders');
     }
   }
 );
@@ -55,8 +57,9 @@ export const fetchAllOrders = createAsyncThunk(
     try {
       const response = await orderAPI.getAllOrders(page, size);
       return response.content;
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to fetch all orders');
+    } catch (error: unknown) {
+      const err = error as { message?: string };
+      return rejectWithValue(err.message || 'Failed to fetch all orders');
     }
   }
 );
@@ -70,8 +73,9 @@ export const fetchOrderById = createAsyncThunk(
     try {
       const response = await orderAPI.getOrderById(id);
       return response;
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to fetch order');
+    } catch (error: unknown) {
+      const err = error as { message?: string };
+      return rejectWithValue(err.message || 'Failed to fetch order');
     }
   }
 );
@@ -85,8 +89,9 @@ export const updateOrderStatus = createAsyncThunk(
     try {
       const response = await orderAPI.updateOrderStatus(data);
       return response;
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to update order status');
+    } catch (error: unknown) {
+      const err = error as { message?: string };
+      return rejectWithValue(err.message || 'Failed to update order status');
     }
   }
 );

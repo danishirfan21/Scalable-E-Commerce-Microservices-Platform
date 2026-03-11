@@ -20,10 +20,12 @@ const createMockStore = (initialState = {}) => {
   });
 };
 
+import { RenderResult } from '@testing-library/react';
+
 // Helper to render with providers
 const renderWithProviders = async (component: React.ReactElement, initialState = {}) => {
   const store = createMockStore(initialState);
-  let result: any;
+  let result: RenderResult = {} as RenderResult;
   await act(async () => {
     result = render(
       <Provider store={store}>

@@ -6,6 +6,7 @@ import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'ax
 import { toast } from 'react-toastify';
 import { API_BASE_URL, TOKEN_KEY, ROUTES } from '../utils/constants';
 import { storage } from '../utils/helpers';
+import { ApiError } from '../types';
 
 // Create axios instance with default configuration
 const axiosInstance: AxiosInstance = axios.create({
@@ -45,7 +46,7 @@ axiosInstance.interceptors.response.use(
     // Handle different error scenarios
     if (error.response) {
       const status = error.response.status;
-      const data: any = error.response.data;
+      const data = error.response.data as ApiError;
 
       switch (status) {
         case 401:
@@ -69,8 +70,8 @@ axiosInstance.interceptors.response.use(
         case 422:
           // Validation error
           if (data?.errors) {
-            const errorMessages = Object.values(data.errors).flat();
-            errorMessages.forEach((msg: any) => toast.error(msg));
+            const errorMessages = Object.values(data.errors).flat() as string[];
+            errorMessages.forEach((msg) => toast.error(msg));
           } else {
             toast.error(data?.message || 'Validation error occurred.');
           }

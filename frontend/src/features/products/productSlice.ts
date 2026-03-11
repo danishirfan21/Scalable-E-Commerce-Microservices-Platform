@@ -27,8 +27,9 @@ export const fetchProducts = createAsyncThunk(
     try {
       const response = await productAPI.getProducts(page, size);
       return response;
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to fetch products');
+    } catch (error: unknown) {
+      const err = error as { message?: string };
+      return rejectWithValue(err.message || 'Failed to fetch products');
     }
   }
 );
@@ -42,8 +43,9 @@ export const fetchProductById = createAsyncThunk(
     try {
       const response = await productAPI.getProductById(id);
       return response;
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to fetch product');
+    } catch (error: unknown) {
+      const err = error as { message?: string };
+      return rejectWithValue(err.message || 'Failed to fetch product');
     }
   }
 );
@@ -57,8 +59,9 @@ export const createProduct = createAsyncThunk(
     try {
       const response = await productAPI.createProduct(productData);
       return response;
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to create product');
+    } catch (error: unknown) {
+      const err = error as { message?: string };
+      return rejectWithValue(err.message || 'Failed to create product');
     }
   }
 );
@@ -72,8 +75,9 @@ export const updateProduct = createAsyncThunk(
     try {
       const response = await productAPI.updateProduct(productData);
       return response;
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to update product');
+    } catch (error: unknown) {
+      const err = error as { message?: string };
+      return rejectWithValue(err.message || 'Failed to update product');
     }
   }
 );
@@ -87,8 +91,9 @@ export const deleteProduct = createAsyncThunk(
     try {
       await productAPI.deleteProduct(id);
       return id;
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to delete product');
+    } catch (error: unknown) {
+      const err = error as { message?: string };
+      return rejectWithValue(err.message || 'Failed to delete product');
     }
   }
 );
@@ -105,8 +110,9 @@ export const searchProducts = createAsyncThunk(
     try {
       const response = await productAPI.searchProducts(query, page, size);
       return response;
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Failed to search products');
+    } catch (error: unknown) {
+      const err = error as { message?: string };
+      return rejectWithValue(err.message || 'Failed to search products');
     }
   }
 );
