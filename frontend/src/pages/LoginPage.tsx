@@ -3,16 +3,7 @@
  */
 
 import React, { useEffect } from 'react';
-import {
-  Container,
-  Box,
-  Typography,
-  TextField,
-  Button,
-  Paper,
-  Link,
-  Grid,
-} from '@mui/material';
+import { Container, Box, Typography, TextField, Button, Paper, Link, Grid } from '@mui/material';
 import { LockOutlined } from '@mui/icons-material';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
@@ -143,7 +134,7 @@ const LoginPage: React.FC = () => {
             <Grid container justifyContent="center">
               <Grid item>
                 <Link component={RouterLink} to={ROUTES.REGISTER} variant="body2">
-                  Don't have an account? Sign Up
+                  Don&apos;t have an account? Sign Up
                 </Link>
               </Grid>
             </Grid>

@@ -29,9 +29,7 @@ const ProductsPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const { products, loading, error } = useAppSelector((state) => state.products);
 
-  const [cart, setCart] = useState<Map<number, { product: Product; quantity: number }>>(
-    new Map()
-  );
+  const [cart, setCart] = useState<Map<number, { product: Product; quantity: number }>>(new Map());
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [shippingAddress, setShippingAddress] = useState('');
 

@@ -91,7 +91,7 @@ export const isAdmin = (role: string | string[]): boolean => {
         r.toUpperCase() === 'ROLE_ADMIN'
     );
   }
-  
+
   // Handle single role string
   const roleUpper = role.toUpperCase();
   return roleUpper === 'ADMIN' || roleUpper === 'ROLE_ADMIN';

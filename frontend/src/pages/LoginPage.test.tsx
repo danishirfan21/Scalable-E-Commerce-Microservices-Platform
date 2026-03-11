@@ -70,7 +70,7 @@ describe('LoginPage', () => {
 
     const submitButton = screen.getByRole('button', { name: /sign in/i });
     await waitFor(() => {
-        expect(submitButton).toBeDisabled();
+      expect(submitButton).toBeDisabled();
     });
   });
 

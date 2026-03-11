@@ -36,7 +36,7 @@ const OrdersPage: React.FC = () => {
       {orders.length === 0 ? (
         <Box sx={{ textAlign: 'center', py: 8 }}>
           <Typography variant="h6" color="text.secondary">
-            You haven't placed any orders yet
+            You haven&apos;t placed any orders yet
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
             Start shopping to see your orders here
