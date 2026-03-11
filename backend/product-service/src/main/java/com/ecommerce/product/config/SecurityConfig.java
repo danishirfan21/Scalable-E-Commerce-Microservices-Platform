@@ -4,7 +4,8 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -30,8 +31,9 @@ import java.util.stream.Collectors;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true)
-@Slf4j
 public class SecurityConfig {
+
+    private static final Logger log = LoggerFactory.getLogger(SecurityConfig.class);
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -59,9 +61,9 @@ public class SecurityConfig {
     /**
      * Filter to extract user authentication from API Gateway headers
      */
-    @Slf4j
     private static class GatewayAuthenticationFilter extends OncePerRequestFilter {
 
+        private static final Logger log = LoggerFactory.getLogger(GatewayAuthenticationFilter.class);
         private static final String USER_ID_HEADER = "X-User-Id";
         private static final String USER_ROLES_HEADER = "X-User-Roles";
 

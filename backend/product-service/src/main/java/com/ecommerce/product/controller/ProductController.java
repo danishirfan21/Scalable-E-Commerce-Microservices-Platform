@@ -11,8 +11,8 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -27,13 +27,17 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/products")
-@RequiredArgsConstructor
-@Slf4j
 @Validated
 @Tag(name = "Product Management", description = "APIs for managing products in the e-commerce catalog")
 public class ProductController {
 
+    private static final Logger log = LoggerFactory.getLogger(ProductController.class);
+
     private final ProductService productService;
+
+    public ProductController(ProductService productService) {
+        this.productService = productService;
+    }
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
@@ -242,28 +246,6 @@ public class ProductController {
         log.debug("Received request to get low stock products with threshold: {}", threshold);
         List<ProductResponse> responses = productService.getLowStockProducts(threshold);
         return ResponseEntity.ok(responses);
-    }
-
-    /**
-     * Check if product has sufficient stock
-     */
-    @GetMapping("/{id}/check-stock")
-    @Operation(summary = "Check product stock availability")
-    public ResponseEntity<Boolean> checkStock(
-            @Parameter(description = "Product ID") @PathVariable Long id,
-            @Parameter(description = "Quantity to check") @RequestParam Integer quantity) {
-        
-        log.info("Checking stock for product ID: {} with quantity: {}", id, quantity);
-        
-        try {
-            ProductResponse product = productService.getProductById(id);
-            boolean hasStock = product.getQuantity() >= quantity;
-            log.info("Stock check result for product ID {}: {}", id, hasStock);
-            return ResponseEntity.ok(hasStock);
-        } catch (Exception e) {
-            log.error("Error checking stock for product ID: {}", id, e);
-            return ResponseEntity.ok(false);
-        }
     }
 
     /**

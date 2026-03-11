@@ -1,6 +1,7 @@
 package com.ecommerce.product.exception;
 
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,8 +22,9 @@ import java.util.Map;
  * Handles all exceptions and returns appropriate error responses
  */
 @RestControllerAdvice
-@Slf4j
 public class GlobalExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     /**
      * Handle ResourceNotFoundException
@@ -180,10 +182,6 @@ public class GlobalExceptionHandler {
     /**
      * Error response structure
      */
-    @lombok.Data
-    @lombok.Builder
-    @lombok.NoArgsConstructor
-    @lombok.AllArgsConstructor
     private static class ErrorResponse {
         private LocalDateTime timestamp;
         private int status;
@@ -191,5 +189,47 @@ public class GlobalExceptionHandler {
         private String message;
         private String path;
         private Map<String, String> validationErrors;
+
+        public ErrorResponse() {}
+
+        public ErrorResponse(LocalDateTime timestamp, int status, String error, String message, String path, Map<String, String> validationErrors) {
+            this.timestamp = timestamp;
+            this.status = status;
+            this.error = error;
+            this.message = message;
+            this.path = path;
+            this.validationErrors = validationErrors;
+        }
+
+        public LocalDateTime getTimestamp() { return timestamp; }
+        public int getStatus() { return status; }
+        public String getError() { return error; }
+        public String getMessage() { return message; }
+        public String getPath() { return path; }
+        public Map<String, String> getValidationErrors() { return validationErrors; }
+
+        public static ErrorResponseBuilder builder() {
+            return new ErrorResponseBuilder();
+        }
+
+        public static class ErrorResponseBuilder {
+            private LocalDateTime timestamp;
+            private int status;
+            private String error;
+            private String message;
+            private String path;
+            private Map<String, String> validationErrors;
+
+            public ErrorResponseBuilder timestamp(LocalDateTime timestamp) { this.timestamp = timestamp; return this; }
+            public ErrorResponseBuilder status(int status) { this.status = status; return this; }
+            public ErrorResponseBuilder error(String error) { this.error = error; return this; }
+            public ErrorResponseBuilder message(String message) { this.message = message; return this; }
+            public ErrorResponseBuilder path(String path) { this.path = path; return this; }
+            public ErrorResponseBuilder validationErrors(Map<String, String> validationErrors) { this.validationErrors = validationErrors; return this; }
+
+            public ErrorResponse build() {
+                return new ErrorResponse(timestamp, status, error, message, path, validationErrors);
+            }
+        }
     }
 }
