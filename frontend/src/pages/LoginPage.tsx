@@ -3,16 +3,7 @@
  */
 
 import React, { useEffect } from 'react';
-import {
-  Container,
-  Box,
-  Typography,
-  TextField,
-  Button,
-  Paper,
-  Link,
-  Grid,
-} from '@mui/material';
+import { Container, Box, Typography, TextField, Button, Paper, Link, Grid } from '@mui/material';
 import { LockOutlined } from '@mui/icons-material';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
@@ -36,7 +27,8 @@ const LoginPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const { isAuthenticated, loading } = useAppSelector((state) => state.auth);
 
-  const from = (location.state as any)?.from?.pathname || ROUTES.PRODUCTS;
+  const from =
+    (location.state as { from?: { pathname: string } })?.from?.pathname || ROUTES.PRODUCTS;
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -51,6 +43,7 @@ const LoginPage: React.FC = () => {
       password: '',
     },
     validationSchema,
+    validateOnMount: true,
     onSubmit: async (values) => {
       await dispatch(login(values));
     },
@@ -142,7 +135,7 @@ const LoginPage: React.FC = () => {
             <Grid container justifyContent="center">
               <Grid item>
                 <Link component={RouterLink} to={ROUTES.REGISTER} variant="body2">
-                  Don't have an account? Sign Up
+                  Don&apos;t have an account? Sign Up
                 </Link>
               </Grid>
             </Grid>

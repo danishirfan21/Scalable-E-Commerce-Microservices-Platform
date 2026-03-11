@@ -32,8 +32,9 @@ export const login = createAsyncThunk(
     try {
       const response = await authAPI.login(credentials);
       return response;
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Login failed');
+    } catch (error: unknown) {
+      const err = error as { message?: string };
+      return rejectWithValue(err.message || 'Login failed');
     }
   }
 );
@@ -47,8 +48,9 @@ export const register = createAsyncThunk(
     try {
       const response = await authAPI.register(userData);
       return response;
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Registration failed');
+    } catch (error: unknown) {
+      const err = error as { message?: string };
+      return rejectWithValue(err.message || 'Registration failed');
     }
   }
 );
@@ -59,7 +61,7 @@ export const register = createAsyncThunk(
 export const logout = createAsyncThunk('auth/logout', async () => {
   try {
     await authAPI.logout();
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Continue with logout even if API call fails
     console.error('Logout API error:', error);
   }

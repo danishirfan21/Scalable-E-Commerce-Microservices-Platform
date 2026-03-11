@@ -3,16 +3,7 @@
  */
 
 import React, { useEffect } from 'react';
-import {
-  Container,
-  Box,
-  Typography,
-  TextField,
-  Button,
-  Paper,
-  Link,
-  Grid,
-} from '@mui/material';
+import { Container, Box, Typography, TextField, Button, Paper, Link, Grid } from '@mui/material';
 import { PersonAdd } from '@mui/icons-material';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
@@ -65,7 +56,13 @@ const RegisterPage: React.FC = () => {
     },
     validationSchema,
     onSubmit: async (values) => {
-      const { confirmPassword, ...registerData } = values;
+      const registerData = {
+        email: values.email,
+        username: values.username,
+        firstName: values.firstName,
+        lastName: values.lastName,
+        password: values.password,
+      };
       await dispatch(register(registerData));
     },
   });

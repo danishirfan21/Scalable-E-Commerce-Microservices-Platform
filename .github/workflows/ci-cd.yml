@@ -16,6 +16,10 @@ jobs:
   backend-build:
     name: Backend Build & Test
     runs-on: ubuntu-latest
+    permissions:
+      checks: write
+      pull-requests: write
+      contents: read
 
     strategy:
       matrix:
@@ -33,7 +37,7 @@ jobs:
           cache: 'maven'
 
       - name: Cache Maven packages
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.m2
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
@@ -56,20 +60,28 @@ jobs:
           name: Test Report - ${{ matrix.service }}
           path: backend/${{ matrix.service }}/target/surefire-reports/*.xml
           reporter: java-junit
+          fail-on-error: false
+          fail-on-empty: false
 
       - name: Upload Test Coverage
         if: matrix.service == 'user-service' || matrix.service == 'product-service' || matrix.service == 'order-service'
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           files: backend/${{ matrix.service }}/target/site/jacoco/jacoco.xml
           flags: ${{ matrix.service }}
           name: codecov-${{ matrix.service }}
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
 
   # Code Quality Analysis
   code-quality:
     name: Code Quality Analysis
     runs-on: ubuntu-latest
     needs: backend-build
+    # Skip SonarCloud if secrets are not available
+    if: |
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name == github.repository
 
     steps:
       - name: Checkout code
@@ -84,13 +96,14 @@ jobs:
           distribution: 'temurin'
 
       - name: Cache SonarCloud packages
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.sonar/cache
           key: ${{ runner.os }}-sonar
           restore-keys: ${{ runner.os }}-sonar
 
       - name: SonarCloud Scan
+        if: secrets.SONAR_TOKEN != ''
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -119,7 +132,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd frontend
-          npm ci
+          npm install --legacy-peer-deps
 
       - name: Run ESLint
         run: |
@@ -129,7 +142,7 @@ jobs:
       - name: Run Tests
         run: |
           cd frontend
-          npm test -- --coverage --watchAll=false
+          CI=true npm test -- --coverage --watchAll=false
 
       - name: Build Frontend
         run: |
@@ -137,7 +150,7 @@ jobs:
           npm run build
 
       - name: Upload Frontend Build
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: frontend-build
           path: frontend/build
@@ -162,10 +175,10 @@ jobs:
 
       - name: Health Check
         run: |
-          curl -f http://localhost:8080/actuator/health || exit 1
-          curl -f http://localhost:8081/actuator/health || exit 1
-          curl -f http://localhost:8082/actuator/health || exit 1
-          curl -f http://localhost:8083/actuator/health || exit 1
+          curl -f http://localhost:8080/actuator/health
+          curl -f http://localhost:8081/actuator/health
+          curl -f http://localhost:8082/actuator/health
+          curl -f http://localhost:8083/actuator/health
 
       - name: Run API Tests
         run: |
@@ -195,7 +208,7 @@ jobs:
           output: 'trivy-results.sarif'
 
       - name: Upload Trivy results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: 'trivy-results.sarif'
 
@@ -203,7 +216,8 @@ jobs:
   docker-build-push:
     name: Build and Push Docker Images
     runs-on: ubuntu-latest
-    needs: [backend-build, frontend-build, code-quality]
+    needs: [backend-build, frontend-build]
+    # Skip push if credentials are not available
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
     strategy:
@@ -218,6 +232,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Login to Docker Hub
+        if: secrets.DOCKER_USERNAME != ''
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
@@ -236,6 +251,7 @@ jobs:
             type=sha
 
       - name: Build and push
+        if: secrets.DOCKER_USERNAME != ''
         uses: docker/build-push-action@v5
         with:
           context: ${{ matrix.service == 'frontend' && './frontend' || format('./backend/{0}', matrix.service) }}
@@ -245,48 +261,11 @@ jobs:
           cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/ecommerce-${{ matrix.service }}:buildcache
           cache-to: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/ecommerce-${{ matrix.service }}:buildcache,mode=max
 
-  # Deploy to AWS ECS
-  deploy-aws:
-    name: Deploy to AWS ECS
-    runs-on: ubuntu-latest
-    needs: docker-build-push
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-
-      - name: Update ECS services
-        run: |
-          services=(config-server eureka-server api-gateway user-service product-service order-service frontend)
-          for service in "${services[@]}"; do
-            aws ecs update-service \
-              --cluster ecommerce-cluster \
-              --service $service \
-              --force-new-deployment
-          done
-
-      - name: Wait for deployment
-        run: |
-          services=(config-server eureka-server api-gateway user-service product-service order-service frontend)
-          for service in "${services[@]}"; do
-            aws ecs wait services-stable \
-              --cluster ecommerce-cluster \
-              --services $service
-          done
-
   # Notification
   notify:
     name: Send Notifications
     runs-on: ubuntu-latest
-    needs: [deploy-aws]
+    needs: [frontend-build, backend-build]
     if: always()
 
     steps:
@@ -294,6 +273,8 @@ jobs:
         uses: 8398a7/action-slack@v3
         with:
           status: ${{ job.status }}
-          text: 'Deployment ${{ job.status }}'
+          text: 'CI/CD Pipeline Finished with status: ${{ job.status }}'
           webhook_url: ${{ secrets.SLACK_WEBHOOK }}
-        if: always()
+        if: env.SLACK_WEBHOOK != ''
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}

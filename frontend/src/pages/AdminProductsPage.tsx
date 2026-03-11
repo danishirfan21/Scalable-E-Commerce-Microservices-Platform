@@ -36,9 +36,7 @@ import { PRODUCT_CATEGORIES } from '../utils/constants';
 const validationSchema = Yup.object({
   name: Yup.string().required('Product name is required'),
   description: Yup.string().required('Description is required'),
-  price: Yup.number()
-    .min(0.01, 'Price must be greater than 0')
-    .required('Price is required'),
+  price: Yup.number().min(0.01, 'Price must be greater than 0').required('Price is required'),
   stockQuantity: Yup.number()
     .min(0, 'Stock quantity cannot be negative')
     .integer('Stock quantity must be an integer')
@@ -138,11 +136,7 @@ const AdminProductsPage: React.FC = () => {
         <Typography variant="h4" component="h1">
           Manage Products
         </Typography>
-        <Button
-          variant="contained"
-          startIcon={<Add />}
-          onClick={() => handleOpenDialog()}
-        >
+        <Button variant="contained" startIcon={<Add />} onClick={() => handleOpenDialog()}>
           Add Product
         </Button>
       </Box>
@@ -161,7 +155,7 @@ const AdminProductsPage: React.FC = () => {
             No products available
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            Click "Add Product" to create your first product
+            Click &quot;Add Product&quot; to create your first product
           </Typography>
         </Box>
       ) : (
@@ -181,9 +175,7 @@ const AdminProductsPage: React.FC = () => {
 
       {/* Create/Edit Product Dialog */}
       <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>
-          {editingProduct ? 'Edit Product' : 'Add New Product'}
-        </DialogTitle>
+        <DialogTitle>{editingProduct ? 'Edit Product' : 'Add New Product'}</DialogTitle>
         <DialogContent>
           <Box component="form" sx={{ mt: 2 }}>
             <TextField
@@ -291,8 +283,8 @@ const AdminProductsPage: React.FC = () => {
         <DialogTitle>Confirm Delete</DialogTitle>
         <DialogContent>
           <Typography>
-            Are you sure you want to delete "{productToDelete?.name}"? This action cannot be
-            undone.
+            Are you sure you want to delete &quot;{productToDelete?.name}&quot;? This action cannot
+            be undone.
           </Typography>
         </DialogContent>
         <DialogActions>

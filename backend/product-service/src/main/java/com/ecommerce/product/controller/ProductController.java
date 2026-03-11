@@ -245,28 +245,6 @@ public class ProductController {
     }
 
     /**
-     * Check if product has sufficient stock
-     */
-    @GetMapping("/{id}/check-stock")
-    @Operation(summary = "Check product stock availability")
-    public ResponseEntity<Boolean> checkStock(
-            @Parameter(description = "Product ID") @PathVariable Long id,
-            @Parameter(description = "Quantity to check") @RequestParam Integer quantity) {
-        
-        log.info("Checking stock for product ID: {} with quantity: {}", id, quantity);
-        
-        try {
-            ProductResponse product = productService.getProductById(id);
-            boolean hasStock = product.getQuantity() >= quantity;
-            log.info("Stock check result for product ID {}: {}", id, hasStock);
-            return ResponseEntity.ok(hasStock);
-        } catch (Exception e) {
-            log.error("Error checking stock for product ID: {}", id, e);
-            return ResponseEntity.ok(false);
-        }
-    }
-
-    /**
      * Restore product inventory (when order is cancelled)
      */
     @PutMapping("/{id}/restore-inventory")

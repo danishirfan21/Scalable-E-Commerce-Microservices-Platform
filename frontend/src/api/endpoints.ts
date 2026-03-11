@@ -25,10 +25,7 @@ export const authAPI = {
    * Login user
    */
   login: async (credentials: LoginRequest): Promise<AuthResponse> => {
-    const response = await axiosInstance.post<AuthResponse>(
-      API_ENDPOINTS.AUTH.LOGIN,
-      credentials
-    );
+    const response = await axiosInstance.post<AuthResponse>(API_ENDPOINTS.AUTH.LOGIN, credentials);
     return response.data;
   },
 
@@ -36,10 +33,7 @@ export const authAPI = {
    * Register new user
    */
   register: async (userData: RegisterRequest): Promise<AuthResponse> => {
-    const response = await axiosInstance.post<AuthResponse>(
-      API_ENDPOINTS.AUTH.REGISTER,
-      userData
-    );
+    const response = await axiosInstance.post<AuthResponse>(API_ENDPOINTS.AUTH.REGISTER, userData);
     return response.data;
   },
 
@@ -99,10 +93,7 @@ export const productAPI = {
    * Create new product (Admin only)
    */
   createProduct: async (productData: CreateProductRequest): Promise<Product> => {
-    const response = await axiosInstance.post<Product>(
-      API_ENDPOINTS.PRODUCTS.BASE,
-      productData
-    );
+    const response = await axiosInstance.post<Product>(API_ENDPOINTS.PRODUCTS.BASE, productData);
     return response.data;
   },
 
@@ -165,12 +156,9 @@ export const orderAPI = {
    * Get all orders (Admin only)
    */
   getAllOrders: async (page = 0, size = 20): Promise<PaginatedResponse<Order>> => {
-    const response = await axiosInstance.get<PaginatedResponse<Order>>(
-      API_ENDPOINTS.ORDERS.BASE,
-      {
-        params: { page, size },
-      }
-    );
+    const response = await axiosInstance.get<PaginatedResponse<Order>>(API_ENDPOINTS.ORDERS.BASE, {
+      params: { page, size },
+    });
     return response.data;
   },
 

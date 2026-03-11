@@ -181,11 +181,7 @@ const ProfilePage: React.FC = () => {
               >
                 Cancel
               </Button>
-              <Button
-                type="submit"
-                variant="contained"
-                disabled={!formik.isValid || !formik.dirty}
-              >
+              <Button type="submit" variant="contained" disabled={!formik.isValid || !formik.dirty}>
                 Save Changes
               </Button>
             </Box>
