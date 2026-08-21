@@ -3,16 +3,7 @@
  */
 
 import React, { useEffect } from 'react';
-import {
-  Container,
-  Box,
-  Typography,
-  TextField,
-  Button,
-  Paper,
-  Link,
-  Grid,
-} from '@mui/material';
+import { Container, Box, Typography, TextField, Button, Paper, Link, Grid } from '@mui/material';
 import { LockOutlined } from '@mui/icons-material';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
@@ -24,7 +15,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 
 // Validation schema
 const validationSchema = Yup.object({
-  email: Yup.string().email('Invalid email address').required('Email is required'),
+  usernameOrEmail: Yup.string().required('Username or email is required'),
   password: Yup.string()
     .min(6, 'Password must be at least 6 characters')
     .required('Password is required'),
@@ -47,10 +38,11 @@ const LoginPage: React.FC = () => {
 
   const formik = useFormik({
     initialValues: {
-      email: '',
+      usernameOrEmail: '',
       password: '',
     },
     validationSchema,
+    validateOnMount: true,
     onSubmit: async (values) => {
       await dispatch(login(values));
     },
@@ -105,16 +97,16 @@ const LoginPage: React.FC = () => {
             <TextField
               margin="normal"
               fullWidth
-              id="email"
-              label="Email Address"
-              name="email"
-              autoComplete="email"
+              id="usernameOrEmail"
+              label="Username or Email"
+              name="usernameOrEmail"
+              autoComplete="username"
               autoFocus
-              value={formik.values.email}
+              value={formik.values.usernameOrEmail}
               onChange={formik.handleChange}
               onBlur={formik.handleBlur}
-              error={formik.touched.email && Boolean(formik.errors.email)}
-              helperText={formik.touched.email && formik.errors.email}
+              error={formik.touched.usernameOrEmail && Boolean(formik.errors.usernameOrEmail)}
+              helperText={formik.touched.usernameOrEmail && formik.errors.usernameOrEmail}
             />
             <TextField
               margin="normal"
@@ -142,7 +134,7 @@ const LoginPage: React.FC = () => {
             <Grid container justifyContent="center">
               <Grid item>
                 <Link component={RouterLink} to={ROUTES.REGISTER} variant="body2">
-                  Don't have an account? Sign Up
+                  Don&apos;t have an account? Sign Up
                 </Link>
               </Grid>
             </Grid>

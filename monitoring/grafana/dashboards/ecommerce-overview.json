@@ -1,0 +1,93 @@
+{
+  "title": "E-Commerce Platform Overview",
+  "uid": "ecommerce-overview",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "refresh": "10s",
+  "time": { "from": "now-30m", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Orders Created (rate/min)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 0 },
+      "targets": [
+        { "expr": "rate(orders_created_total[1m]) * 60", "legendFormat": "created" }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Orders Confirmed vs Rejected (rate/min)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 0 },
+      "targets": [
+        { "expr": "rate(orders_confirmed_total[1m]) * 60", "legendFormat": "confirmed" },
+        { "expr": "rate(orders_rejected_total[1m]) * 60", "legendFormat": "rejected" }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Inventory Reservation Outcomes (rate/min)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 0 },
+      "targets": [
+        { "expr": "rate(inventory_reservation_approved_total[1m]) * 60", "legendFormat": "approved" },
+        { "expr": "rate(inventory_reservation_rejected_total[1m]) * 60", "legendFormat": "rejected" }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Kafka Consumer Failures (DLT)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 8 },
+      "targets": [
+        { "expr": "increase(kafka_consumer_failures_total[5m])", "legendFormat": "{{service}}" }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "HTTP Request Rate by Service",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 8 },
+      "targets": [
+        { "expr": "sum by (service) (rate(http_server_requests_seconds_count[1m]))", "legendFormat": "{{service}}" }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "HTTP p95 Latency by Service",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 8 },
+      "targets": [
+        { "expr": "histogram_quantile(0.95, sum by (service, le) (rate(http_server_requests_seconds_bucket[5m])))", "legendFormat": "{{service}}" }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "JVM Heap Used by Service",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 16 },
+      "targets": [
+        { "expr": "sum by (service) (jvm_memory_used_bytes{area=\"heap\"})", "legendFormat": "{{service}}" }
+      ]
+    },
+    {
+      "id": 8,
+      "title": "DB Connection Pool - Active",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 16 },
+      "targets": [
+        { "expr": "hikaricp_connections_active", "legendFormat": "{{service}}" }
+      ]
+    },
+    {
+      "id": 9,
+      "title": "5xx Error Rate by Service",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 16 },
+      "targets": [
+        { "expr": "sum by (service) (rate(http_server_requests_seconds_count{status=~\"5..\"}[1m]))", "legendFormat": "{{service}}" }
+      ]
+    }
+  ]
+}

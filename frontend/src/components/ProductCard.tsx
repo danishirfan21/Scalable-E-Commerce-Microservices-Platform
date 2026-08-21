@@ -32,7 +32,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   onDelete,
   isAdmin = false,
 }) => {
-  const isOutOfStock = product.stockQuantity === 0;
+  const isOutOfStock = product.quantity === 0;
 
   return (
     <Card
@@ -50,10 +50,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
       <CardMedia
         component="img"
         height="200"
-        image={
-          product.imageUrl ||
-          'https://via.placeholder.com/400x300.png?text=No+Image'
-        }
+        image={product.imageUrl || 'https://via.placeholder.com/400x300.png?text=No+Image'}
         alt={product.name}
         sx={{ objectFit: 'cover' }}
       />
@@ -79,20 +76,13 @@ const ProductCard: React.FC<ProductCardProps> = ({
           <Typography variant="h6" color="primary">
             {formatCurrency(product.price)}
           </Typography>
-          <Chip
-            label={product.category}
-            size="small"
-            color="default"
-            variant="outlined"
-          />
+          <Chip label={product.category} size="small" color="default" variant="outlined" />
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Typography variant="body2" color="text.secondary">
-            Stock: {product.stockQuantity}
+            Stock: {product.quantity}
           </Typography>
-          {isOutOfStock && (
-            <Chip label="Out of Stock" size="small" color="error" />
-          )}
+          {isOutOfStock && <Chip label="Out of Stock" size="small" color="error" />}
         </Box>
       </CardContent>
       <CardActions sx={{ justifyContent: 'space-between', px: 2, pb: 2 }}>

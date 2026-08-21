@@ -3,6 +3,7 @@ package com.ecommerce.order.repository;
 import com.ecommerce.order.model.Order;
 import com.ecommerce.order.model.OrderStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -58,4 +59,15 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
      */
     @Query("SELECT DISTINCT o FROM Order o LEFT JOIN FETCH o.orderItems WHERE o.userId = :userId")
     List<Order> findByUserIdWithItems(@Param("userId") Long userId);
+
+    /**
+     * Atomically transitions an order's status only if it is still in the expected status.
+     * Used by the inventory-result Kafka consumer to apply CONFIRMED/REJECTED exactly once even
+     * if the same result event is redelivered (idempotent consumer).
+     */
+    @Modifying
+    @Query("UPDATE Order o SET o.status = :newStatus WHERE o.id = :id AND o.status = :expectedStatus")
+    int updateStatusIfCurrentlyIs(@Param("id") Long id,
+                                   @Param("expectedStatus") OrderStatus expectedStatus,
+                                   @Param("newStatus") OrderStatus newStatus);
 }

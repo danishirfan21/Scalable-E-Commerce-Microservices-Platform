@@ -1,0 +1,159 @@
+# Single-replica Postgres Deployments for the demo. A real deployment would use a managed
+# database (RDS/Cloud SQL) or a StatefulSet with a proper backup story instead.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-user-pvc
+  namespace: ecommerce
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-user
+  namespace: ecommerce
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: postgres-user }
+  template:
+    metadata:
+      labels: { app: postgres-user }
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:15-alpine
+          ports: [{ containerPort: 5432 }]
+          env:
+            - { name: POSTGRES_DB, value: userdb }
+            - { name: POSTGRES_USER, value: postgres }
+            - name: POSTGRES_PASSWORD
+              valueFrom: { secretKeyRef: { name: ecommerce-secrets, key: DB_PASSWORD } }
+          volumeMounts:
+            - { name: data, mountPath: /var/lib/postgresql/data }
+          readinessProbe:
+            exec: { command: ["pg_isready", "-U", "postgres"] }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: data
+          persistentVolumeClaim: { claimName: postgres-user-pvc }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-user
+  namespace: ecommerce
+spec:
+  selector: { app: postgres-user }
+  ports: [{ port: 5432, targetPort: 5432 }]
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-product-pvc
+  namespace: ecommerce
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-product
+  namespace: ecommerce
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: postgres-product }
+  template:
+    metadata:
+      labels: { app: postgres-product }
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:15-alpine
+          ports: [{ containerPort: 5432 }]
+          env:
+            - { name: POSTGRES_DB, value: productdb }
+            - { name: POSTGRES_USER, value: postgres }
+            - name: POSTGRES_PASSWORD
+              valueFrom: { secretKeyRef: { name: ecommerce-secrets, key: DB_PASSWORD } }
+          volumeMounts:
+            - { name: data, mountPath: /var/lib/postgresql/data }
+          readinessProbe:
+            exec: { command: ["pg_isready", "-U", "postgres"] }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: data
+          persistentVolumeClaim: { claimName: postgres-product-pvc }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-product
+  namespace: ecommerce
+spec:
+  selector: { app: postgres-product }
+  ports: [{ port: 5432, targetPort: 5432 }]
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-order-pvc
+  namespace: ecommerce
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-order
+  namespace: ecommerce
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: postgres-order }
+  template:
+    metadata:
+      labels: { app: postgres-order }
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:15-alpine
+          ports: [{ containerPort: 5432 }]
+          env:
+            - { name: POSTGRES_DB, value: orderdb }
+            - { name: POSTGRES_USER, value: postgres }
+            - name: POSTGRES_PASSWORD
+              valueFrom: { secretKeyRef: { name: ecommerce-secrets, key: DB_PASSWORD } }
+          volumeMounts:
+            - { name: data, mountPath: /var/lib/postgresql/data }
+          readinessProbe:
+            exec: { command: ["pg_isready", "-U", "postgres"] }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: data
+          persistentVolumeClaim: { claimName: postgres-order-pvc }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-order
+  namespace: ecommerce
+spec:
+  selector: { app: postgres-order }
+  ports: [{ port: 5432, targetPort: 5432 }]

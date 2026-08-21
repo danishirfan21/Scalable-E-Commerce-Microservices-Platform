@@ -48,6 +48,7 @@ export const ORDER_STATUS_COLORS: Record<string, string> = {
   SHIPPED: '#9C27B0',
   DELIVERED: '#4CAF50',
   CANCELLED: '#F44336',
+  REJECTED: '#B71C1C',
 };
 
 export const PRODUCT_CATEGORIES = [

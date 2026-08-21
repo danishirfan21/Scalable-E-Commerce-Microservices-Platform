@@ -3,14 +3,17 @@ package com.ecommerce.order.service;
 import com.ecommerce.order.client.ProductClient;
 import com.ecommerce.order.client.UserClient;
 import com.ecommerce.order.dto.*;
-import com.ecommerce.order.exception.InsufficientStockException;
+import com.ecommerce.order.event.OrderCreatedEvent;
+import com.ecommerce.order.event.OrderItemEvent;
 import com.ecommerce.order.exception.InvalidOrderException;
 import com.ecommerce.order.exception.PaymentFailedException;
 import com.ecommerce.order.exception.ResourceNotFoundException;
+import com.ecommerce.order.kafka.OrderEventProducer;
 import com.ecommerce.order.model.Order;
 import com.ecommerce.order.model.OrderItem;
 import com.ecommerce.order.model.OrderStatus;
 import com.ecommerce.order.repository.OrderRepository;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -33,7 +36,17 @@ public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final ProductClient productClient;
     private final UserClient userClient;
+    private final OrderEventProducer orderEventProducer;
+    private final MeterRegistry meterRegistry;
 
+    /**
+     * Creates the order as PENDING and publishes an OrderCreatedEvent to Kafka; inventory
+     * reservation happens asynchronously in product-service, which reports back on the
+     * inventory.reservation.result topic (see InventoryResultConsumer) to move the order to
+     * CONFIRMED or REJECTED. This method does NOT reserve stock synchronously - it only
+     * validates that the user and products exist and snapshots current price/name into the
+     * order items.
+     */
     @Override
     @Transactional
     public OrderResponse createOrder(Long userId, OrderRequest orderRequest) {
@@ -47,12 +60,11 @@ public class OrderServiceImpl implements OrderService {
             throw new ResourceNotFoundException("User", "id", userId);
         }
 
-        // Validate order items and check stock
         List<OrderItem> orderItems = new ArrayList<>();
+        List<OrderItemEvent> itemEvents = new ArrayList<>();
         BigDecimal totalAmount = BigDecimal.ZERO;
 
         for (OrderItemRequest itemRequest : orderRequest.getOrderItems()) {
-            // Get product details
             ProductResponse product;
             try {
                 product = productClient.getProduct(itemRequest.getProductId());
@@ -61,18 +73,6 @@ public class OrderServiceImpl implements OrderService {
                 throw new ResourceNotFoundException("Product", "id", itemRequest.getProductId());
             }
 
-            // Check stock availability
-            Boolean stockAvailable = productClient.checkStock(
-                    itemRequest.getProductId(),
-                    itemRequest.getQuantity()
-            );
-
-            if (!stockAvailable) {
-                log.error("Insufficient stock for product: {}", product.getName());
-                throw new InsufficientStockException(product.getId(), itemRequest.getQuantity());
-            }
-
-            // Create order item
             BigDecimal itemPrice = product.getPrice();
             BigDecimal itemSubtotal = itemPrice.multiply(BigDecimal.valueOf(itemRequest.getQuantity()));
 
@@ -84,22 +84,29 @@ public class OrderServiceImpl implements OrderService {
                     .build();
 
             orderItems.add(orderItem);
+            itemEvents.add(OrderItemEvent.builder()
+                    .productId(product.getId())
+                    .quantity(itemRequest.getQuantity())
+                    .build());
             totalAmount = totalAmount.add(itemSubtotal);
         }
 
-        // Create order
         Order order = Order.builder()
                 .userId(userId)
-                .orderItems(orderItems)
                 .totalAmount(totalAmount)
                 .status(OrderStatus.PENDING)
                 .build();
+        orderItems.forEach(order::addOrderItem);
 
-        // Set order ID for each order item
         Order savedOrder = orderRepository.save(order);
-        orderItems.forEach(item -> item.setOrderId(savedOrder.getId()));
+        meterRegistry.counter("orders_created_total").increment();
+        log.info("Order created with ID: {} (status PENDING, awaiting inventory reservation)", savedOrder.getId());
 
-        log.info("Order created successfully with ID: {}", savedOrder.getId());
+        orderEventProducer.publishOrderCreated(OrderCreatedEvent.builder()
+                .orderId(savedOrder.getId())
+                .userId(userId)
+                .items(itemEvents)
+                .build());
 
         return mapToOrderResponse(savedOrder);
     }
@@ -138,6 +145,17 @@ public class OrderServiceImpl implements OrderService {
         log.info("Fetching all orders");
 
         List<Order> orders = orderRepository.findAll();
+        return orders.stream()
+                .map(this::mapToOrderResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<OrderResponse> getOrdersByStatus(OrderStatus status) {
+        log.info("Fetching orders with status: {}", status);
+
+        List<Order> orders = orderRepository.findByStatus(status);
         return orders.stream()
                 .map(this::mapToOrderResponse)
                 .collect(Collectors.toList());
@@ -210,10 +228,13 @@ public class OrderServiceImpl implements OrderService {
         Order order = orderRepository.findByIdWithItems(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order", "id", orderId));
 
-        // Validate order status
-        if (order.getStatus() != OrderStatus.PENDING) {
-            log.error("Order {} is not in PENDING status. Current status: {}", orderId, order.getStatus());
-            throw new InvalidOrderException("Order must be in PENDING status to process payment");
+        // Payment can only be taken once inventory has actually been reserved for the order
+        // (order status CONFIRMED, set asynchronously by InventoryResultConsumer after
+        // product-service approves the reservation).
+        if (order.getStatus() != OrderStatus.CONFIRMED) {
+            log.error("Order {} is not CONFIRMED (inventory not yet reserved). Current status: {}",
+                    orderId, order.getStatus());
+            throw new InvalidOrderException("Order must be CONFIRMED (inventory reserved) before payment can be processed. Current status: " + order.getStatus());
         }
 
         // Validate payment amount
@@ -223,32 +244,13 @@ public class OrderServiceImpl implements OrderService {
             throw new PaymentFailedException("Payment amount does not match order total");
         }
 
-        try {
-            // Simulate payment processing
-            boolean paymentSuccess = processPaymentWithGateway(paymentRequest);
-
-            if (!paymentSuccess) {
-                throw new PaymentFailedException("Payment processing failed");
-            }
-
-            // Reduce inventory after successful payment
-            for (OrderItem item : order.getOrderItems()) {
-                productClient.reduceInventory(item.getProductId(), item.getQuantity());
-                log.info("Reduced inventory for product {}: {} units", item.getProductId(), item.getQuantity());
-            }
-
-            // Update order status to CONFIRMED
-            order.setStatus(OrderStatus.CONFIRMED);
-            Order confirmedOrder = orderRepository.save(order);
-
-            log.info("Payment processed successfully for order {}", orderId);
-
-            return mapToOrderResponse(confirmedOrder);
-
-        } catch (Exception e) {
-            log.error("Payment processing failed for order {}: {}", orderId, e.getMessage());
-            throw new PaymentFailedException("Payment processing failed: " + e.getMessage(), e);
+        boolean paymentSuccess = processPaymentWithGateway(paymentRequest);
+        if (!paymentSuccess) {
+            throw new PaymentFailedException("Payment processing failed");
         }
+
+        log.info("Payment processed successfully for order {}", orderId);
+        return mapToOrderResponse(order);
     }
 
     /**
@@ -279,7 +281,7 @@ public class OrderServiceImpl implements OrderService {
             case PENDING -> newStatus == OrderStatus.CONFIRMED || newStatus == OrderStatus.CANCELLED;
             case CONFIRMED -> newStatus == OrderStatus.SHIPPED || newStatus == OrderStatus.CANCELLED;
             case SHIPPED -> newStatus == OrderStatus.DELIVERED;
-            case DELIVERED, CANCELLED -> false;
+            case DELIVERED, CANCELLED, REJECTED -> false;
         };
 
         if (!isValid) {

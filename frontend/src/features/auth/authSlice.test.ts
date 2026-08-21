@@ -3,7 +3,7 @@
  */
 
 import authReducer, { clearError, login, logout } from './authSlice';
-import { AuthState, UserRole } from '../../types';
+import { AuthState, AuthResponse } from '../../types';
 
 describe('authSlice', () => {
   const initialState: AuthState = {
@@ -29,34 +29,40 @@ describe('authSlice', () => {
   });
 
   test('should handle login.pending', () => {
-    const actual = authReducer(initialState, login.pending('', { email: '', password: '' }));
+    const actual = authReducer(
+      initialState,
+      login.pending('', { usernameOrEmail: '', password: '' })
+    );
     expect(actual.loading).toBe(true);
     expect(actual.error).toBeNull();
   });
 
   test('should handle login.fulfilled', () => {
-    const mockUser = {
-      id: 1,
-      email: 'test@example.com',
-      username: 'testuser',
-      firstName: 'Test',
-      lastName: 'User',
-      role: UserRole.USER,
-    };
-
-    const mockPayload = {
+    // Matches user-service's actual (flat) AuthResponse shape.
+    const mockPayload: AuthResponse = {
       token: 'mock-token',
-      user: mockUser,
+      type: 'Bearer',
+      id: 1,
+      username: 'testuser',
+      email: 'test@example.com',
+      roles: ['ROLE_CUSTOMER'],
     };
 
     const actual = authReducer(
       initialState,
-      login.fulfilled(mockPayload, '', { email: '', password: '' })
+      login.fulfilled(mockPayload, '', { usernameOrEmail: '', password: '' })
     );
 
     expect(actual.loading).toBe(false);
     expect(actual.isAuthenticated).toBe(true);
-    expect(actual.user).toEqual(mockUser);
+    expect(actual.user).toEqual({
+      id: 1,
+      username: 'testuser',
+      email: 'test@example.com',
+      firstName: '',
+      lastName: '',
+      roles: ['ROLE_CUSTOMER'],
+    });
     expect(actual.token).toBe('mock-token');
     expect(actual.error).toBeNull();
   });
@@ -64,7 +70,7 @@ describe('authSlice', () => {
   test('should handle login.rejected', () => {
     const actual = authReducer(
       initialState,
-      login.rejected(null, '', { email: '', password: '' }, 'Login failed')
+      login.rejected(null, '', { usernameOrEmail: '', password: '' }, 'Login failed')
     );
 
     expect(actual.loading).toBe(false);
@@ -82,7 +88,7 @@ describe('authSlice', () => {
         username: 'testuser',
         firstName: 'Test',
         lastName: 'User',
-        role: UserRole.USER,
+        roles: ['ROLE_CUSTOMER'],
       },
       token: 'mock-token',
       isAuthenticated: true,

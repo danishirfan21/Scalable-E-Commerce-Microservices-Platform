@@ -46,6 +46,11 @@ public interface OrderService {
     List<OrderResponse> getAllOrders();
 
     /**
+     * Retrieves all orders with a given status (admin only).
+     */
+    List<OrderResponse> getOrdersByStatus(OrderStatus status);
+
+    /**
      * Updates the status of an order.
      *
      * @param orderId the order ID

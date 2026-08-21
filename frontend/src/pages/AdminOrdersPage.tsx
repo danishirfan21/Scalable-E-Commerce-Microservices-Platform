@@ -31,7 +31,7 @@ const AdminOrdersPage: React.FC = () => {
   const [newStatus, setNewStatus] = useState<OrderStatus>(OrderStatus.PENDING);
 
   useEffect(() => {
-    dispatch(fetchAllOrders({ page: 0, size: 100 }));
+    dispatch(fetchAllOrders());
   }, [dispatch]);
 
   const handleOpenStatusDialog = (order: Order) => {

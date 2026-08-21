@@ -3,16 +3,7 @@
  */
 
 import React, { useEffect } from 'react';
-import {
-  Container,
-  Box,
-  Typography,
-  TextField,
-  Button,
-  Paper,
-  Link,
-  Grid,
-} from '@mui/material';
+import { Container, Box, Typography, TextField, Button, Paper, Link, Grid } from '@mui/material';
 import { PersonAdd } from '@mui/icons-material';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
@@ -65,7 +56,8 @@ const RegisterPage: React.FC = () => {
     },
     validationSchema,
     onSubmit: async (values) => {
-      const { confirmPassword, ...registerData } = values;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { confirmPassword: _confirmPassword, ...registerData } = values;
       await dispatch(register(registerData));
     },
   });

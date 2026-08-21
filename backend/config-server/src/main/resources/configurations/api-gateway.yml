@@ -8,21 +8,21 @@ spring:
         - id: user-service
           uri: lb://user-service
           predicates:
-            - Path=/api/users/**,/auth/**
+            - Path=/api/users/**,/api/auth/**
           filters:
-            - RewritePath=/api/users/(?<segment>.*), /${segment}
+            - AuthenticationFilter
         - id: product-service
           uri: lb://product-service
           predicates:
             - Path=/api/products/**
           filters:
-            - RewritePath=/api/products/(?<segment>.*), /${segment}
+            - AuthenticationFilter
         - id: order-service
           uri: lb://order-service
           predicates:
             - Path=/api/orders/**
           filters:
-            - RewritePath=/api/orders/(?<segment>.*), /${segment}
+            - AuthenticationFilter
       default-filters:
         - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
       globalcors:

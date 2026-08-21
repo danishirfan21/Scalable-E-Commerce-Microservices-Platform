@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
@@ -39,7 +40,7 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
             ServerHttpRequest request = exchange.getRequest();
 
             // Skip authentication for public endpoints
-            if (isPublicEndpoint(request.getPath().toString())) {
+            if (isPublicEndpoint(request.getPath().toString(), request.getMethod())) {
                 return chain.filter(exchange);
             }
 
@@ -63,15 +64,21 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
 
                 // Extract user information and add to request headers
                 String username = jwtUtil.extractUsername(token);
+                Long userId = jwtUtil.extractUserId(token);
                 List<String> roles = jwtUtil.extractRoles(token);
+
+                if (userId == null) {
+                    return onError(exchange, "Token missing userId claim", HttpStatus.UNAUTHORIZED);
+                }
 
                 // Add user information to request headers for downstream services
                 ServerHttpRequest modifiedRequest = request.mutate()
-                        .header("X-User-Id", username)
+                        .header("X-User-Id", String.valueOf(userId))
+                        .header("X-Username", username)
                         .header("X-User-Roles", String.join(",", roles))
                         .build();
 
-                logger.debug("User {} authenticated successfully with roles: {}", username, roles);
+                logger.debug("User {} (id={}) authenticated successfully with roles: {}", username, userId, roles);
 
                 return chain.filter(exchange.mutate().request(modifiedRequest).build());
 
@@ -82,12 +89,17 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
         };
     }
 
-    private boolean isPublicEndpoint(String path) {
-        return path.contains("/auth/login") ||
-               path.contains("/auth/register") ||
-               path.contains("/actuator") ||
-               path.contains("/swagger") ||
-               path.contains("/api-docs");
+    private boolean isPublicEndpoint(String path, HttpMethod method) {
+        if (path.contains("/auth/login") ||
+                path.contains("/auth/register") ||
+                path.contains("/actuator") ||
+                path.contains("/swagger") ||
+                path.contains("/api-docs")) {
+            return true;
+        }
+        // Product catalog browsing is public; only mutating operations require auth
+        // (product-service itself enforces ADMIN role on those via @PreAuthorize).
+        return HttpMethod.GET.equals(method) && path.startsWith("/api/products");
     }
 
     private Mono<Void> onError(ServerWebExchange exchange, String message, HttpStatus status) {

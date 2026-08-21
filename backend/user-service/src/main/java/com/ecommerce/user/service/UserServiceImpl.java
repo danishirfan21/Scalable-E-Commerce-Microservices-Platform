@@ -3,6 +3,7 @@ package com.ecommerce.user.service;
 import com.ecommerce.user.dto.AuthResponse;
 import com.ecommerce.user.dto.LoginRequest;
 import com.ecommerce.user.dto.RegisterRequest;
+import com.ecommerce.user.dto.UpdateProfileRequest;
 import com.ecommerce.user.dto.UserResponse;
 import com.ecommerce.user.exception.DuplicateResourceException;
 import com.ecommerce.user.exception.ResourceNotFoundException;
@@ -85,13 +86,13 @@ public class UserServiceImpl implements UserService {
 
         logger.info("User registered successfully: {}", savedUser.getUsername());
 
-        // Generate JWT token
-        String token = jwtTokenProvider.generateTokenFromUsername(
+        String token = jwtTokenProvider.generateToken(
+                savedUser.getId(),
                 savedUser.getUsername(),
                 savedUser.getRoles().stream().toList()
         );
 
-        return new AuthResponse(token, savedUser.getUsername(), savedUser.getEmail(), savedUser.getRoles());
+        return new AuthResponse(token, savedUser.getId(), savedUser.getUsername(), savedUser.getEmail(), savedUser.getRoles());
     }
 
     @Override
@@ -107,14 +108,14 @@ public class UserServiceImpl implements UserService {
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        String token = jwtTokenProvider.generateToken(authentication);
-
         User user = userRepository.findByUsernameOrEmail(request.getUsernameOrEmail())
                 .orElseThrow(() -> new ResourceNotFoundException("User", "usernameOrEmail", request.getUsernameOrEmail()));
 
+        String token = jwtTokenProvider.generateToken(user.getId(), user.getUsername(), user.getRoles().stream().toList());
+
         logger.info("User logged in successfully: {}", user.getUsername());
 
-        return new AuthResponse(token, user.getUsername(), user.getEmail(), user.getRoles());
+        return new AuthResponse(token, user.getId(), user.getUsername(), user.getEmail(), user.getRoles());
     }
 
     @Override
@@ -150,7 +151,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserResponse updateUser(Long id, RegisterRequest request) {
+    public UserResponse updateUser(Long id, UpdateProfileRequest request) {
         logger.info("Updating user: {}", id);
 
         User user = userRepository.findById(id)

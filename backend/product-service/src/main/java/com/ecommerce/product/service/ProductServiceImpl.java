@@ -169,25 +169,56 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional
+    public boolean reduceInventoryIfAvailable(Long id, Integer amount) {
+        if (!productRepository.existsById(id)) {
+            log.error("Product not found with ID: {}", id);
+            throw new ResourceNotFoundException("Product not found with ID: " + id);
+        }
+
+        int rowsUpdated = productRepository.decrementStockIfAvailable(id, amount);
+        boolean reserved = rowsUpdated > 0;
+        if (reserved) {
+            log.info("Reserved {} units of product ID: {}", amount, id);
+        } else {
+            log.warn("Could not reserve {} units of product ID: {} - insufficient stock", amount, id);
+        }
+        return reserved;
+    }
+
+    @Override
+    @Transactional
     public ProductResponse reduceInventory(Long id, Integer amount) {
         log.info("Reducing inventory for product ID: {} by amount: {}", id, amount);
 
-        Product product = productRepository.findById(id)
-                .orElseThrow(() -> {
-                    log.error("Product not found with ID: {}", id);
-                    return new ResourceNotFoundException("Product not found with ID: " + id);
-                });
-
-        if (!product.hasSufficientStock(amount)) {
-            log.error("Insufficient stock for product ID: {}. Required: {}, Available: {}",
-                    id, amount, product.getQuantity());
+        if (!reduceInventoryIfAvailable(id, amount)) {
+            Product product = productRepository.findById(id)
+                    .orElseThrow(() -> new ResourceNotFoundException("Product not found with ID: " + id));
             throw new InsufficientStockException("Insufficient stock for product: " + product.getName() +
                     ". Required: " + amount + ", Available: " + product.getQuantity());
         }
 
-        product.reduceQuantity(amount);
-        Product updatedProduct = productRepository.save(product);
+        Product updatedProduct = productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with ID: " + id));
         log.info("Successfully reduced inventory for product ID: {}. New quantity: {}",
+                id, updatedProduct.getQuantity());
+
+        return ProductResponse.fromEntity(updatedProduct);
+    }
+
+    @Override
+    @Transactional
+    public ProductResponse restoreInventory(Long id, Integer amount) {
+        log.info("Restoring inventory for product ID: {} by amount: {}", id, amount);
+
+        int rowsUpdated = productRepository.incrementStock(id, amount);
+        if (rowsUpdated == 0) {
+            log.error("Product not found with ID: {}", id);
+            throw new ResourceNotFoundException("Product not found with ID: " + id);
+        }
+
+        Product updatedProduct = productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with ID: " + id));
+        log.info("Successfully restored inventory for product ID: {}. New quantity: {}",
                 id, updatedProduct.getQuantity());
 
         return ProductResponse.fromEntity(updatedProduct);

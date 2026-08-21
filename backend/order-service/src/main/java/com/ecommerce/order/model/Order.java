@@ -4,7 +4,9 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -35,9 +37,10 @@ public class Order {
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    @JoinColumn(name = "order_id")
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private List<OrderItem> orderItems = new ArrayList<>();
 
     @Column(name = "total_amount", nullable = false, precision = 10, scale = 2)
@@ -63,7 +66,7 @@ public class Order {
      */
     public void addOrderItem(OrderItem item) {
         orderItems.add(item);
-        item.setOrderId(this.id);
+        item.setOrder(this);
     }
 
     /**
@@ -73,7 +76,7 @@ public class Order {
      */
     public void removeOrderItem(OrderItem item) {
         orderItems.remove(item);
-        item.setOrderId(null);
+        item.setOrder(null);
     }
 
     /**

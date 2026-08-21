@@ -24,7 +24,7 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({ children, adminOnly = false
   }
 
   // Check admin access if required
-  if (adminOnly && user && !isAdmin(user.role)) {
+  if (adminOnly && user && !isAdmin(user.roles)) {
     return <Navigate to={ROUTES.HOME} replace />;
   }
 

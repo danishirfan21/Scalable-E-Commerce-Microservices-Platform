@@ -126,14 +126,21 @@ const Navbar: React.FC = () => {
                 <MenuItem onClick={() => handleNavigation(ROUTES.ORDERS)}>
                   <Typography textAlign="center">My Orders</Typography>
                 </MenuItem>
-                {user && isAdmin(user.role) && [
-                  <MenuItem key="admin-products" onClick={() => handleNavigation(ROUTES.ADMIN_PRODUCTS)}>
-                    <Typography textAlign="center">Manage Products</Typography>
-                  </MenuItem>,
-                  <MenuItem key="admin-orders" onClick={() => handleNavigation(ROUTES.ADMIN_ORDERS)}>
-                    <Typography textAlign="center">Manage Orders</Typography>
-                  </MenuItem>,
-                ]}
+                {user &&
+                  isAdmin(user.roles) && [
+                    <MenuItem
+                      key="admin-products"
+                      onClick={() => handleNavigation(ROUTES.ADMIN_PRODUCTS)}
+                    >
+                      <Typography textAlign="center">Manage Products</Typography>
+                    </MenuItem>,
+                    <MenuItem
+                      key="admin-orders"
+                      onClick={() => handleNavigation(ROUTES.ADMIN_ORDERS)}
+                    >
+                      <Typography textAlign="center">Manage Orders</Typography>
+                    </MenuItem>,
+                  ]}
               </Menu>
             </Box>
           )}
@@ -174,7 +181,7 @@ const Navbar: React.FC = () => {
               >
                 My Orders
               </Button>
-              {user && isAdmin(user.role) && (
+              {user && isAdmin(user.roles) && (
                 <>
                   <Button
                     onClick={() => handleNavigation(ROUTES.ADMIN_PRODUCTS)}

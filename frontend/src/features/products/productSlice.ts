@@ -23,9 +23,9 @@ const initialState: ProductState = {
  */
 export const fetchProducts = createAsyncThunk(
   'products/fetchProducts',
-  async ({ page = 0, size = 20 }: { page?: number; size?: number }, { rejectWithValue }) => {
+  async (_: void, { rejectWithValue }) => {
     try {
-      const response = await productAPI.getProducts(page, size);
+      const response = await productAPI.getProducts();
       return response;
     } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to fetch products');
@@ -98,12 +98,9 @@ export const deleteProduct = createAsyncThunk(
  */
 export const searchProducts = createAsyncThunk(
   'products/searchProducts',
-  async (
-    { query, page = 0, size = 20 }: { query: string; page?: number; size?: number },
-    { rejectWithValue }
-  ) => {
+  async (term: string, { rejectWithValue }) => {
     try {
-      const response = await productAPI.searchProducts(query, page, size);
+      const response = await productAPI.searchProducts(term);
       return response;
     } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to search products');
@@ -140,9 +137,9 @@ const productSlice = createSlice({
       })
       .addCase(fetchProducts.fulfilled, (state, action) => {
         state.loading = false;
-        state.products = action.payload.content;
-        state.totalPages = action.payload.totalPages;
-        state.currentPage = action.payload.number;
+        state.products = action.payload;
+        state.totalPages = 1;
+        state.currentPage = 0;
         state.error = null;
       })
       .addCase(fetchProducts.rejected, (state, action) => {
@@ -231,9 +228,9 @@ const productSlice = createSlice({
       })
       .addCase(searchProducts.fulfilled, (state, action) => {
         state.loading = false;
-        state.products = action.payload.content;
-        state.totalPages = action.payload.totalPages;
-        state.currentPage = action.payload.number;
+        state.products = action.payload;
+        state.totalPages = 1;
+        state.currentPage = 0;
         state.error = null;
       })
       .addCase(searchProducts.rejected, (state, action) => {

@@ -2,22 +2,24 @@
  * Core TypeScript interfaces and types for the E-Commerce platform
  */
 
-// User and Authentication Types
+// User and Authentication Types. Matches user-service's UserResponse DTO - roles is a plural
+// array (a user can hold multiple roles), not a single `role` field.
 export interface User {
   id: number;
   email: string;
   username: string;
   firstName: string;
   lastName: string;
-  role: UserRole;
+  phone?: string;
+  roles: string[];
   createdAt?: string;
   updatedAt?: string;
 }
 
+// Matches the role strings user-service actually issues (see UserServiceImpl - default role is
+// ROLE_CUSTOMER; ROLE_ADMIN is assigned to admin accounts).
 export enum UserRole {
-  USER = 'USER',
-  ADMIN = 'ADMIN',
-  ROLE_USER = 'ROLE_USER',
+  ROLE_CUSTOMER = 'ROLE_CUSTOMER',
   ROLE_ADMIN = 'ROLE_ADMIN',
 }
 
@@ -30,7 +32,7 @@ export interface AuthState {
 }
 
 export interface LoginRequest {
-  email: string;
+  usernameOrEmail: string;
   password: string;
 }
 
@@ -42,9 +44,15 @@ export interface RegisterRequest {
   lastName: string;
 }
 
+// Matches user-service's AuthResponse DTO exactly - flat, no nested `user` object, and does not
+// include firstName/lastName (those come from GET /users/profile after login).
 export interface AuthResponse {
   token: string;
-  user: User;
+  type: string;
+  id: number;
+  username: string;
+  email: string;
+  roles: string[];
 }
 
 // Product Types
@@ -53,7 +61,7 @@ export interface Product {
   name: string;
   description: string;
   price: number;
-  stockQuantity: number;
+  quantity: number;
   category: string;
   imageUrl?: string;
   sku?: string;
@@ -74,7 +82,7 @@ export interface CreateProductRequest {
   name: string;
   description: string;
   price: number;
-  stockQuantity: number;
+  quantity: number;
   category: string;
   imageUrl?: string;
   sku?: string;
@@ -96,10 +104,9 @@ export interface OrderItem {
 export interface Order {
   id: number;
   userId: number;
-  items: OrderItem[];
+  orderItems: OrderItem[];
   totalAmount: number;
   status: OrderStatus;
-  shippingAddress: string;
   createdAt: string;
   updatedAt?: string;
 }
@@ -110,6 +117,7 @@ export enum OrderStatus {
   SHIPPED = 'SHIPPED',
   DELIVERED = 'DELIVERED',
   CANCELLED = 'CANCELLED',
+  REJECTED = 'REJECTED',
 }
 
 export interface OrderState {
@@ -120,8 +128,7 @@ export interface OrderState {
 }
 
 export interface CreateOrderRequest {
-  items: OrderItem[];
-  shippingAddress: string;
+  orderItems: { productId: number; quantity: number }[];
 }
 
 export interface UpdateOrderStatusRequest {
@@ -157,7 +164,7 @@ export interface PaginatedResponse<T> {
 
 // Form Types
 export interface LoginFormValues {
-  email: string;
+  usernameOrEmail: string;
   password: string;
 }
 
@@ -174,7 +181,7 @@ export interface ProductFormValues {
   name: string;
   description: string;
   price: number | string;
-  stockQuantity: number | string;
+  quantity: number | string;
   category: string;
   imageUrl?: string;
   sku?: string;

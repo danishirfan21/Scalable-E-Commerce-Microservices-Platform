@@ -35,7 +35,7 @@ describe('LoginPage', () => {
     renderWithProviders(<LoginPage />);
 
     expect(screen.getByRole('heading', { name: /sign in/i })).toBeInTheDocument();
-    expect(screen.getByLabelText(/email address/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/username or email/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
   });
@@ -43,27 +43,31 @@ describe('LoginPage', () => {
   test('displays validation errors for invalid inputs', async () => {
     renderWithProviders(<LoginPage />);
 
-    const emailInput = screen.getByLabelText(/email address/i);
+    const usernameInput = screen.getByLabelText(/username or email/i);
     const passwordInput = screen.getByLabelText(/password/i);
 
     // Touch fields and blur to trigger validation
-    fireEvent.change(emailInput, { target: { value: 'invalid-email' } });
-    fireEvent.blur(emailInput);
+    fireEvent.change(usernameInput, { target: { value: 'someone' } });
+    fireEvent.change(usernameInput, { target: { value: '' } });
+    fireEvent.blur(usernameInput);
 
     fireEvent.change(passwordInput, { target: { value: '123' } });
     fireEvent.blur(passwordInput);
 
     await waitFor(() => {
-      expect(screen.getByText(/invalid email address/i)).toBeInTheDocument();
+      expect(screen.getByText(/username or email is required/i)).toBeInTheDocument();
       expect(screen.getByText(/password must be at least 6 characters/i)).toBeInTheDocument();
     });
   });
 
-  test('submit button is disabled when form is invalid', () => {
+  test('submit button is disabled when form is invalid', async () => {
     renderWithProviders(<LoginPage />);
 
     const submitButton = screen.getByRole('button', { name: /sign in/i });
-    expect(submitButton).toBeDisabled();
+    // Formik validates on mount asynchronously, so the disabled state lands after a tick.
+    await waitFor(() => {
+      expect(submitButton).toBeDisabled();
+    });
   });
 
   test('displays link to registration page', () => {

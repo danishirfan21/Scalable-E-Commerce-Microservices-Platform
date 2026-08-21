@@ -9,18 +9,19 @@ spring:
   cloud:
     config:
       server:
+        # This server always runs with the "native" profile, serving config from the
+        # classpath:/configurations directory bundled in the jar - there is no git-backed
+        # config repo in this project. (A git backend is the more common production setup,
+        # but would require an external repo this project doesn't have; native keeps the
+        # demo self-contained while still exercising a real Config Server.)
         native:
           search-locations: classpath:/configurations
-        git:
-          uri: ${CONFIG_GIT_URI:file://${user.home}/config-repo}
-          default-label: main
-          clone-on-start: true
 
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,refresh
+        include: health,info,metrics,refresh,prometheus
   endpoint:
     health:
       show-details: always

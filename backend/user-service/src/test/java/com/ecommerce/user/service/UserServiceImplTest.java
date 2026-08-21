@@ -24,6 +24,7 @@ import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
@@ -89,7 +90,7 @@ class UserServiceImplTest {
         when(userRepository.existsByEmail(anyString())).thenReturn(false);
         when(passwordEncoder.encode(anyString())).thenReturn("encodedPassword");
         when(userRepository.save(any(User.class))).thenReturn(testUser);
-        when(jwtTokenProvider.generateTokenFromUsername(anyString(), anyList()))
+        when(jwtTokenProvider.generateToken(any(), anyString(), anyList()))
                 .thenReturn("test-jwt-token");
 
         // Act
@@ -105,7 +106,7 @@ class UserServiceImplTest {
         verify(userRepository).existsByUsername(registerRequest.getUsername());
         verify(userRepository).existsByEmail(registerRequest.getEmail());
         verify(userRepository).save(any(User.class));
-        verify(jwtTokenProvider).generateTokenFromUsername(anyString(), anyList());
+        verify(jwtTokenProvider).generateToken(any(), anyString(), anyList());
     }
 
     @Test
@@ -143,8 +144,8 @@ class UserServiceImplTest {
         Authentication authentication = mock(Authentication.class);
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenReturn(authentication);
-        when(jwtTokenProvider.generateToken(authentication)).thenReturn("test-jwt-token");
         when(userRepository.findByUsernameOrEmail(anyString())).thenReturn(Optional.of(testUser));
+        when(jwtTokenProvider.generateToken(any(), anyString(), anyList())).thenReturn("test-jwt-token");
 
         // Act
         AuthResponse response = userService.login(loginRequest);
@@ -155,7 +156,7 @@ class UserServiceImplTest {
         assertEquals("testuser", response.getUsername());
 
         verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
-        verify(jwtTokenProvider).generateToken(authentication);
+        verify(jwtTokenProvider).generateToken(any(), anyString(), anyList());
     }
 
     @Test
@@ -214,8 +215,17 @@ class UserServiceImplTest {
         when(passwordEncoder.encode(anyString())).thenReturn("newEncodedPassword");
         when(userRepository.save(any(User.class))).thenReturn(testUser);
 
+        com.ecommerce.user.dto.UpdateProfileRequest updateRequest = com.ecommerce.user.dto.UpdateProfileRequest.builder()
+                .username(registerRequest.getUsername())
+                .email(registerRequest.getEmail())
+                .firstName(registerRequest.getFirstName())
+                .lastName(registerRequest.getLastName())
+                .phone(registerRequest.getPhone())
+                .password(registerRequest.getPassword())
+                .build();
+
         // Act
-        UserResponse response = userService.updateUser(1L, registerRequest);
+        UserResponse response = userService.updateUser(1L, updateRequest);
 
         // Assert
         assertNotNull(response);

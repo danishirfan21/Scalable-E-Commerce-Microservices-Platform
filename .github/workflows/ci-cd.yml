@@ -5,6 +5,7 @@ on:
     branches: [ main, develop ]
   pull_request:
     branches: [ main, develop ]
+  workflow_dispatch:
 
 env:
   JAVA_VERSION: '17'
@@ -12,9 +13,9 @@ env:
   MAVEN_OPTS: -Xmx1024m
 
 jobs:
-  # Backend Build and Test
+  # Backend unit tests (mvn test - no Docker required, fast)
   backend-build:
-    name: Backend Build & Test
+    name: Backend Build & Unit Tests
     runs-on: ubuntu-latest
 
     strategy:
@@ -32,22 +33,15 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      - name: Cache Maven packages
-        uses: actions/cache@v3
-        with:
-          path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-m2
-
       - name: Build ${{ matrix.service }}
         run: |
           cd backend/${{ matrix.service }}
-          mvn clean install -DskipTests
+          mvn clean install -DskipTests -B
 
-      - name: Run Tests for ${{ matrix.service }}
+      - name: Run unit tests for ${{ matrix.service }}
         run: |
           cd backend/${{ matrix.service }}
-          mvn test
+          mvn test -B
 
       - name: Generate Test Report
         if: always()
@@ -57,19 +51,52 @@ jobs:
           path: backend/${{ matrix.service }}/target/surefire-reports/*.xml
           reporter: java-junit
 
-      - name: Upload Test Coverage
-        if: matrix.service == 'user-service' || matrix.service == 'product-service' || matrix.service == 'order-service'
-        uses: codecov/codecov-action@v3
-        with:
-          files: backend/${{ matrix.service }}/target/site/jacoco/jacoco.xml
-          flags: ${{ matrix.service }}
-          name: codecov-${{ matrix.service }}
+  # Integration tests with a real Docker daemon (Testcontainers: Postgres + embedded Kafka).
+  # This is the job that actually proves the Kafka order-flow and concurrency behavior described
+  # in the README - not just that the code compiles.
+  integration-tests:
+    name: Integration Tests (Testcontainers)
+    runs-on: ubuntu-latest
+    needs: backend-build
 
-  # Code Quality Analysis
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Run product-service integration tests (Testcontainers Postgres + embedded Kafka)
+        run: |
+          cd backend/product-service
+          mvn verify -B
+
+      - name: Run order-service integration tests (Testcontainers Postgres + embedded Kafka)
+        run: |
+          cd backend/order-service
+          mvn verify -B
+
+      - name: Upload failsafe reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: failsafe-reports
+          path: |
+            backend/product-service/target/failsafe-reports
+            backend/order-service/target/failsafe-reports
+
+  # Code Quality Analysis - only runs when a SONAR_TOKEN secret is actually configured, so a
+  # fork/clone without SonarCloud set up doesn't get a permanently-red pipeline over a step it
+  # can't pass.
   code-quality:
     name: Code Quality Analysis
     runs-on: ubuntu-latest
     needs: backend-build
+    if: ${{ vars.SONAR_ORGANIZATION != '' }}
 
     steps:
       - name: Checkout code
@@ -98,7 +125,7 @@ jobs:
           cd backend
           mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
             -Dsonar.projectKey=ecommerce-platform \
-            -Dsonar.organization=your-org
+            -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
 
   # Frontend Build and Test
   frontend-build:
@@ -129,7 +156,7 @@ jobs:
       - name: Run Tests
         run: |
           cd frontend
-          npm test -- --coverage --watchAll=false
+          npm run test:coverage
 
       - name: Build Frontend
         run: |
@@ -137,14 +164,16 @@ jobs:
           npm run build
 
       - name: Upload Frontend Build
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: frontend-build
           path: frontend/build
 
-  # E2E Tests
+  # End-to-End Docker Verification - builds every image, boots the full stack, and runs
+  # scripts/verify.sh against it: register/login, create a product, set stock, create an order,
+  # poll until it reaches CONFIRMED, verify stock decreased, and check a rejection path.
   e2e-tests:
-    name: End-to-End Tests
+    name: End-to-End Docker Verification
     runs-on: ubuntu-latest
     needs: [backend-build, frontend-build]
 
@@ -155,26 +184,21 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Start services with Docker Compose
-        run: |
-          docker-compose up -d
-          sleep 60  # Wait for services to be ready
+      - name: Build and start the full stack
+        run: docker compose up --build -d
 
-      - name: Health Check
-        run: |
-          curl -f http://localhost:8080/actuator/health || exit 1
-          curl -f http://localhost:8081/actuator/health || exit 1
-          curl -f http://localhost:8082/actuator/health || exit 1
-          curl -f http://localhost:8083/actuator/health || exit 1
+      - name: Run end-to-end verification script
+        run: bash scripts/verify.sh
+        env:
+          BASE_URL: http://localhost:8080
 
-      - name: Run API Tests
-        run: |
-          npm install -g newman
-          newman run docs/postman_collection.json
+      - name: Dump service logs on failure
+        if: failure()
+        run: docker compose logs --no-color
 
       - name: Stop services
         if: always()
-        run: docker-compose down
+        run: docker compose down -v
 
   # Security Scan
   security-scan:
@@ -199,12 +223,14 @@ jobs:
         with:
           sarif_file: 'trivy-results.sarif'
 
-  # Docker Build and Push
+  # Docker Build and Push - only on main, and only if a registry username is configured. Without
+  # this guard, every push to main would fail here on missing DOCKER_USERNAME/DOCKER_PASSWORD
+  # secrets in any fork or clone that hasn't set up a Docker Hub account.
   docker-build-push:
     name: Build and Push Docker Images
     runs-on: ubuntu-latest
-    needs: [backend-build, frontend-build, code-quality]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: [integration-tests, frontend-build, e2e-tests]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && vars.DOCKER_USERNAME != ''
 
     strategy:
       matrix:
@@ -220,14 +246,14 @@ jobs:
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
+          username: ${{ vars.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ secrets.DOCKER_USERNAME }}/ecommerce-${{ matrix.service }}
+          images: ${{ vars.DOCKER_USERNAME }}/ecommerce-${{ matrix.service }}
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -239,18 +265,23 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ${{ matrix.service == 'frontend' && './frontend' || format('./backend/{0}', matrix.service) }}
+          build-args: |
+            ${{ matrix.service == 'frontend' && 'REACT_APP_API_URL=http://localhost:8080/api' || '' }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/ecommerce-${{ matrix.service }}:buildcache
-          cache-to: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/ecommerce-${{ matrix.service }}:buildcache,mode=max
+          cache-from: type=registry,ref=${{ vars.DOCKER_USERNAME }}/ecommerce-${{ matrix.service }}:buildcache
+          cache-to: type=registry,ref=${{ vars.DOCKER_USERNAME }}/ecommerce-${{ matrix.service }}:buildcache,mode=max
 
-  # Deploy to AWS ECS
+  # Deploy to AWS ECS - disabled by default. This repo does not provision any AWS infrastructure
+  # (no Terraform/CloudFormation - see docs/AWS_DEPLOYMENT.md, which is a deployment *guide*, not
+  # IaC). Flip DEPLOY_AWS_ENABLED to 'true' as a repo variable only after you have actually
+  # created the ECS cluster/services this job assumes exist.
   deploy-aws:
     name: Deploy to AWS ECS
     runs-on: ubuntu-latest
     needs: docker-build-push
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && vars.DEPLOY_AWS_ENABLED == 'true'
 
     steps:
       - name: Checkout code
@@ -282,12 +313,12 @@ jobs:
               --services $service
           done
 
-  # Notification
+  # Notification - only meaningful once deploy-aws is actually enabled; skipped otherwise.
   notify:
     name: Send Notifications
     runs-on: ubuntu-latest
     needs: [deploy-aws]
-    if: always()
+    if: always() && vars.DEPLOY_AWS_ENABLED == 'true'
 
     steps:
       - name: Send Slack notification

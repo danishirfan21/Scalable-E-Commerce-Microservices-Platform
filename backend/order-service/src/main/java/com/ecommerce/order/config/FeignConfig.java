@@ -34,36 +34,38 @@ public class FeignConfig {
     }
 
     /**
-     * Request interceptor to propagate headers across services.
+     * Request interceptor that propagates the caller's identity to downstream services
+     * and additionally stamps every outgoing Feign call with an internal ROLE_ORDER_SERVICE
+     * authority. Order-service needs to call product-service's inventory endpoints and
+     * user-service's user lookup endpoint on behalf of the request, but those endpoints are
+     * guarded by roles the end user (e.g. ROLE_CUSTOMER) does not hold. ROLE_ORDER_SERVICE is
+     * a trusted internal-service identity that downstream services grant to order-service
+     * specifically (see product-service/user-service SecurityConfig), analogous to a service
+     * account. This mirrors the existing header-trust model (X-User-Id/X-User-Roles set by the
+     * API Gateway after JWT validation) rather than re-validating a JWT at every hop.
      */
     @Bean
     public RequestInterceptor requestInterceptor() {
         return requestTemplate -> {
             ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+            String userId = null;
+            String userRoles = "ROLE_ORDER_SERVICE";
+
             if (attributes != null) {
                 var request = attributes.getRequest();
-
-                // Propagate user ID header
-                String userId = request.getHeader("X-User-Id");
-                if (userId != null) {
-                    requestTemplate.header("X-User-Id", userId);
+                userId = request.getHeader("X-User-Id");
+                String callerRoles = request.getHeader("X-User-Roles");
+                if (callerRoles != null && !callerRoles.isBlank()) {
+                    userRoles = callerRoles + ",ROLE_ORDER_SERVICE";
                 }
-
-                // Propagate user role header
-                String userRole = request.getHeader("X-User-Role");
-                if (userRole != null) {
-                    requestTemplate.header("X-User-Role", userRole);
-                }
-
-                // Propagate authorization header if present
-                String authHeader = request.getHeader("Authorization");
-                if (authHeader != null) {
-                    requestTemplate.header("Authorization", authHeader);
-                }
-
-                log.debug("Propagating headers to Feign client: X-User-Id={}, X-User-Role={}",
-                        userId, userRole);
             }
+
+            if (userId != null) {
+                requestTemplate.header("X-User-Id", userId);
+            }
+            requestTemplate.header("X-User-Roles", userRoles);
+
+            log.debug("Propagating headers to Feign client: X-User-Id={}, X-User-Roles={}", userId, userRoles);
         };
     }
 

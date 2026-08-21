@@ -20,6 +20,7 @@ import * as Yup from 'yup';
 import { useAppDispatch, useAppSelector } from '../redux/hooks';
 import { updateUser } from '../features/auth/authSlice';
 import { userAPI } from '../api/endpoints';
+import { isAdmin } from '../utils/helpers';
 import { toast } from 'react-toastify';
 
 // Validation schema
@@ -85,8 +86,8 @@ const ProfilePage: React.FC = () => {
                 Role
               </Typography>
               <Chip
-                label={user.role}
-                color={user.role === 'ADMIN' ? 'error' : 'primary'}
+                label={user.roles.join(', ')}
+                color={isAdmin(user.roles) ? 'error' : 'primary'}
                 size="small"
               />
             </Grid>
@@ -181,11 +182,7 @@ const ProfilePage: React.FC = () => {
               >
                 Cancel
               </Button>
-              <Button
-                type="submit"
-                variant="contained"
-                disabled={!formik.isValid || !formik.dirty}
-              >
+              <Button type="submit" variant="contained" disabled={!formik.isValid || !formik.dirty}>
                 Save Changes
               </Button>
             </Box>

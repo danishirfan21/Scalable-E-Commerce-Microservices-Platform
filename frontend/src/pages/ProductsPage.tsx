@@ -8,7 +8,6 @@ import {
   Typography,
   Grid,
   Box,
-  TextField,
   Button,
   Dialog,
   DialogTitle,
@@ -20,7 +19,7 @@ import { ShoppingCart as ShoppingCartIcon } from '@mui/icons-material';
 import { useAppDispatch, useAppSelector } from '../redux/hooks';
 import { fetchProducts } from '../features/products/productSlice';
 import { createOrder } from '../features/orders/orderSlice';
-import { Product, OrderItem } from '../types';
+import { Product } from '../types';
 import ProductCard from '../components/ProductCard';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { toast } from 'react-toastify';
@@ -29,14 +28,11 @@ const ProductsPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const { products, loading, error } = useAppSelector((state) => state.products);
 
-  const [cart, setCart] = useState<Map<number, { product: Product; quantity: number }>>(
-    new Map()
-  );
+  const [cart, setCart] = useState<Map<number, { product: Product; quantity: number }>>(new Map());
   const [checkoutOpen, setCheckoutOpen] = useState(false);
-  const [shippingAddress, setShippingAddress] = useState('');
 
   useEffect(() => {
-    dispatch(fetchProducts({ page: 0, size: 100 }));
+    dispatch(fetchProducts());
   }, [dispatch]);
 
   const handleAddToCart = (product: Product) => {
@@ -44,7 +40,7 @@ const ProductsPage: React.FC = () => {
     const existing = newCart.get(product.id);
 
     if (existing) {
-      if (existing.quantity < product.stockQuantity) {
+      if (existing.quantity < product.quantity) {
         newCart.set(product.id, {
           product,
           quantity: existing.quantity + 1,
@@ -77,7 +73,7 @@ const ProductsPage: React.FC = () => {
 
     const newCart = new Map(cart);
     const item = newCart.get(productId);
-    if (item && quantity <= item.product.stockQuantity) {
+    if (item && quantity <= item.product.quantity) {
       newCart.set(productId, { ...item, quantity });
       setCart(newCart);
     } else {
@@ -94,28 +90,17 @@ const ProductsPage: React.FC = () => {
   };
 
   const handleCheckout = async () => {
-    if (!shippingAddress.trim()) {
-      toast.error('Please enter a shipping address');
-      return;
-    }
-
-    const items: OrderItem[] = Array.from(cart.values()).map((item) => ({
+    const orderItems = Array.from(cart.values()).map((item) => ({
       productId: item.product.id,
       quantity: item.quantity,
-      price: item.product.price,
     }));
 
-    const result = await dispatch(
-      createOrder({
-        items,
-        shippingAddress: shippingAddress.trim(),
-      })
-    );
+    const result = await dispatch(createOrder({ orderItems }));
 
     if (createOrder.fulfilled.match(result)) {
       setCart(new Map());
-      setShippingAddress('');
       setCheckoutOpen(false);
+      toast.info('Order placed - inventory is being reserved, check "My Orders" for status.');
     }
   };
 
@@ -218,25 +203,10 @@ const ProductsPage: React.FC = () => {
           <Typography variant="h6" sx={{ mt: 3, mb: 2 }}>
             Total: ${calculateTotal().toFixed(2)}
           </Typography>
-
-          <TextField
-            fullWidth
-            label="Shipping Address"
-            multiline
-            rows={3}
-            value={shippingAddress}
-            onChange={(e) => setShippingAddress(e.target.value)}
-            placeholder="Enter your complete shipping address"
-            sx={{ mt: 2 }}
-          />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setCheckoutOpen(false)}>Cancel</Button>
-          <Button
-            variant="contained"
-            onClick={handleCheckout}
-            disabled={cart.size === 0 || !shippingAddress.trim()}
-          >
+          <Button variant="contained" onClick={handleCheckout} disabled={cart.size === 0}>
             Place Order
           </Button>
         </DialogActions>

@@ -9,14 +9,20 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production && npm cache clean --force
+# Install ALL dependencies (including devDependencies) - the CRA/TypeScript build itself
+# needs @types/*, react-scripts, etc, which --only=production would strip out.
+RUN npm ci
 
 # Copy source code
 COPY . .
 
+# CRA bakes REACT_APP_* vars into the static bundle at build time, so it must be passed as a
+# build ARG (docker-compose passes it via `build.args`), not a runtime `environment:` entry.
+ARG REACT_APP_API_URL=http://localhost:8080/api
+ENV REACT_APP_API_URL=$REACT_APP_API_URL
+
 # Build the application
-RUN npm run build
+RUN npm run build && npm prune --production
 
 # Stage 2: Serve with nginx
 FROM nginx:alpine

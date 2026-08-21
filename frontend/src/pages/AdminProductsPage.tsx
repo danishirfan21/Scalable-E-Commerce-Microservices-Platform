@@ -36,10 +36,8 @@ import { PRODUCT_CATEGORIES } from '../utils/constants';
 const validationSchema = Yup.object({
   name: Yup.string().required('Product name is required'),
   description: Yup.string().required('Description is required'),
-  price: Yup.number()
-    .min(0.01, 'Price must be greater than 0')
-    .required('Price is required'),
-  stockQuantity: Yup.number()
+  price: Yup.number().min(0.01, 'Price must be greater than 0').required('Price is required'),
+  quantity: Yup.number()
     .min(0, 'Stock quantity cannot be negative')
     .integer('Stock quantity must be an integer')
     .required('Stock quantity is required'),
@@ -57,7 +55,7 @@ const AdminProductsPage: React.FC = () => {
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
 
   useEffect(() => {
-    dispatch(fetchProducts({ page: 0, size: 100 }));
+    dispatch(fetchProducts());
   }, [dispatch]);
 
   const formik = useFormik({
@@ -65,7 +63,7 @@ const AdminProductsPage: React.FC = () => {
       name: '',
       description: '',
       price: '',
-      stockQuantity: '',
+      quantity: '',
       category: '',
       imageUrl: '',
     },
@@ -75,7 +73,7 @@ const AdminProductsPage: React.FC = () => {
         name: values.name,
         description: values.description,
         price: Number(values.price),
-        stockQuantity: Number(values.stockQuantity),
+        quantity: Number(values.quantity),
         category: values.category,
         imageUrl: values.imageUrl || undefined,
       };
@@ -97,7 +95,7 @@ const AdminProductsPage: React.FC = () => {
         name: product.name,
         description: product.description,
         price: product.price.toString(),
-        stockQuantity: product.stockQuantity.toString(),
+        quantity: product.quantity.toString(),
         category: product.category,
         imageUrl: product.imageUrl || '',
       });
@@ -138,11 +136,7 @@ const AdminProductsPage: React.FC = () => {
         <Typography variant="h4" component="h1">
           Manage Products
         </Typography>
-        <Button
-          variant="contained"
-          startIcon={<Add />}
-          onClick={() => handleOpenDialog()}
-        >
+        <Button variant="contained" startIcon={<Add />} onClick={() => handleOpenDialog()}>
           Add Product
         </Button>
       </Box>
@@ -161,7 +155,7 @@ const AdminProductsPage: React.FC = () => {
             No products available
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            Click "Add Product" to create your first product
+            Click &quot;Add Product&quot; to create your first product
           </Typography>
         </Box>
       ) : (
@@ -181,9 +175,7 @@ const AdminProductsPage: React.FC = () => {
 
       {/* Create/Edit Product Dialog */}
       <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>
-          {editingProduct ? 'Edit Product' : 'Add New Product'}
-        </DialogTitle>
+        <DialogTitle>{editingProduct ? 'Edit Product' : 'Add New Product'}</DialogTitle>
         <DialogContent>
           <Box component="form" sx={{ mt: 2 }}>
             <TextField
@@ -230,15 +222,15 @@ const AdminProductsPage: React.FC = () => {
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
-                  id="stockQuantity"
+                  id="quantity"
                   label="Stock Quantity"
-                  name="stockQuantity"
+                  name="quantity"
                   type="number"
-                  value={formik.values.stockQuantity}
+                  value={formik.values.quantity}
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
-                  error={formik.touched.stockQuantity && Boolean(formik.errors.stockQuantity)}
-                  helperText={formik.touched.stockQuantity && formik.errors.stockQuantity}
+                  error={formik.touched.quantity && Boolean(formik.errors.quantity)}
+                  helperText={formik.touched.quantity && formik.errors.quantity}
                 />
               </Grid>
             </Grid>
@@ -291,8 +283,8 @@ const AdminProductsPage: React.FC = () => {
         <DialogTitle>Confirm Delete</DialogTitle>
         <DialogContent>
           <Typography>
-            Are you sure you want to delete "{productToDelete?.name}"? This action cannot be
-            undone.
+            Are you sure you want to delete &quot;{productToDelete?.name}&quot;? This action cannot
+            be undone.
           </Typography>
         </DialogContent>
         <DialogActions>

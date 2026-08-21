@@ -14,7 +14,6 @@ import {
   Order,
   CreateOrderRequest,
   UpdateOrderStatusRequest,
-  PaginatedResponse,
 } from '../types';
 import { API_ENDPOINTS } from '../utils/constants';
 
@@ -25,10 +24,7 @@ export const authAPI = {
    * Login user
    */
   login: async (credentials: LoginRequest): Promise<AuthResponse> => {
-    const response = await axiosInstance.post<AuthResponse>(
-      API_ENDPOINTS.AUTH.LOGIN,
-      credentials
-    );
+    const response = await axiosInstance.post<AuthResponse>(API_ENDPOINTS.AUTH.LOGIN, credentials);
     return response.data;
   },
 
@@ -36,18 +32,16 @@ export const authAPI = {
    * Register new user
    */
   register: async (userData: RegisterRequest): Promise<AuthResponse> => {
-    const response = await axiosInstance.post<AuthResponse>(
-      API_ENDPOINTS.AUTH.REGISTER,
-      userData
-    );
+    const response = await axiosInstance.post<AuthResponse>(API_ENDPOINTS.AUTH.REGISTER, userData);
     return response.data;
   },
 
   /**
-   * Logout user
+   * Logout user. JWT auth is stateless - there is no server-side session to invalidate, so this
+   * is purely a client-side token clear (see authSlice's logout thunk).
    */
   logout: async (): Promise<void> => {
-    await axiosInstance.post(API_ENDPOINTS.AUTH.LOGOUT);
+    return Promise.resolve();
   },
 };
 
@@ -75,15 +69,12 @@ export const userAPI = {
 
 export const productAPI = {
   /**
-   * Get all products with pagination
+   * Get all products. product-service has no server-side pagination - it returns the full
+   * catalog as a plain array - so this returns Product[] directly rather than a paginated
+   * envelope.
    */
-  getProducts: async (page = 0, size = 20): Promise<PaginatedResponse<Product>> => {
-    const response = await axiosInstance.get<PaginatedResponse<Product>>(
-      API_ENDPOINTS.PRODUCTS.BASE,
-      {
-        params: { page, size },
-      }
-    );
+  getProducts: async (): Promise<Product[]> => {
+    const response = await axiosInstance.get<Product[]>(API_ENDPOINTS.PRODUCTS.BASE);
     return response.data;
   },
 
@@ -99,10 +90,7 @@ export const productAPI = {
    * Create new product (Admin only)
    */
   createProduct: async (productData: CreateProductRequest): Promise<Product> => {
-    const response = await axiosInstance.post<Product>(
-      API_ENDPOINTS.PRODUCTS.BASE,
-      productData
-    );
+    const response = await axiosInstance.post<Product>(API_ENDPOINTS.PRODUCTS.BASE, productData);
     return response.data;
   },
 
@@ -125,19 +113,12 @@ export const productAPI = {
   },
 
   /**
-   * Search products by name or category
+   * Search products by name (matches ProductController's /api/products/search?term=)
    */
-  searchProducts: async (
-    query: string,
-    page = 0,
-    size = 20
-  ): Promise<PaginatedResponse<Product>> => {
-    const response = await axiosInstance.get<PaginatedResponse<Product>>(
-      `${API_ENDPOINTS.PRODUCTS.BASE}/search`,
-      {
-        params: { query, page, size },
-      }
-    );
+  searchProducts: async (term: string): Promise<Product[]> => {
+    const response = await axiosInstance.get<Product[]>(`${API_ENDPOINTS.PRODUCTS.BASE}/search`, {
+      params: { term },
+    });
     return response.data;
   },
 };
@@ -162,15 +143,10 @@ export const orderAPI = {
   },
 
   /**
-   * Get all orders (Admin only)
+   * Get all orders (Admin only). order-service has no server-side pagination.
    */
-  getAllOrders: async (page = 0, size = 20): Promise<PaginatedResponse<Order>> => {
-    const response = await axiosInstance.get<PaginatedResponse<Order>>(
-      API_ENDPOINTS.ORDERS.BASE,
-      {
-        params: { page, size },
-      }
-    );
+  getAllOrders: async (): Promise<Order[]> => {
+    const response = await axiosInstance.get<Order[]>(API_ENDPOINTS.ORDERS.BASE);
     return response.data;
   },
 
@@ -186,9 +162,10 @@ export const orderAPI = {
    * Update order status (Admin only)
    */
   updateOrderStatus: async (data: UpdateOrderStatusRequest): Promise<Order> => {
-    const response = await axiosInstance.patch<Order>(
+    const response = await axiosInstance.put<Order>(
       API_ENDPOINTS.ORDERS.UPDATE_STATUS(data.orderId),
-      { status: data.status }
+      null,
+      { params: { status: data.status } }
     );
     return response.data;
   },

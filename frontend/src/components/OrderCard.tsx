@@ -56,9 +56,6 @@ const OrderCard: React.FC<OrderCardProps> = ({ order, showUserInfo = false }) =>
               User ID: {order.userId}
             </Typography>
           )}
-          <Typography variant="body2" color="text.secondary" gutterBottom>
-            Shipping Address: {order.shippingAddress}
-          </Typography>
         </Box>
 
         <Divider sx={{ my: 2 }} />
@@ -68,7 +65,7 @@ const OrderCard: React.FC<OrderCardProps> = ({ order, showUserInfo = false }) =>
           Order Items:
         </Typography>
         <List dense disablePadding>
-          {order.items.map((item, index) => (
+          {order.orderItems.map((item, index) => (
             <ListItem key={index} disableGutters>
               <ListItemText
                 primary={item.productName || `Product ID: ${item.productId}`}

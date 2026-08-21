@@ -4,10 +4,26 @@
 
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { authAPI } from '../../api/endpoints';
-import { AuthState, LoginRequest, RegisterRequest, User } from '../../types';
+import { AuthResponse, AuthState, LoginRequest, RegisterRequest, User } from '../../types';
 import { TOKEN_KEY, USER_KEY } from '../../utils/constants';
 import { storage } from '../../utils/helpers';
 import { toast } from 'react-toastify';
+
+/**
+ * user-service's AuthResponse is flat (token/id/username/email/roles) and does not include
+ * firstName/lastName - those are populated later from GET /users/profile. This adapts it into
+ * the frontend's richer User shape used throughout the app.
+ */
+function toUser(auth: AuthResponse): User {
+  return {
+    id: auth.id,
+    username: auth.username,
+    email: auth.email,
+    firstName: '',
+    lastName: '',
+    roles: auth.roles ?? [],
+  };
+}
 
 // Load persisted state from localStorage
 const token = storage.get<string>(TOKEN_KEY);
@@ -97,15 +113,16 @@ const authSlice = createSlice({
       .addCase(login.fulfilled, (state, action) => {
         state.loading = false;
         state.isAuthenticated = true;
-        state.user = action.payload.user;
+        const user = toUser(action.payload);
+        state.user = user;
         state.token = action.payload.token;
         state.error = null;
 
         // Persist to localStorage
         storage.set(TOKEN_KEY, action.payload.token);
-        storage.set(USER_KEY, action.payload.user);
+        storage.set(USER_KEY, user);
 
-        toast.success(`Welcome back, ${action.payload.user.firstName}!`);
+        toast.success(`Welcome back, ${user.username}!`);
       })
       .addCase(login.rejected, (state, action) => {
         state.loading = false;
@@ -124,13 +141,14 @@ const authSlice = createSlice({
       .addCase(register.fulfilled, (state, action) => {
         state.loading = false;
         state.isAuthenticated = true;
-        state.user = action.payload.user;
+        const user = toUser(action.payload);
+        state.user = user;
         state.token = action.payload.token;
         state.error = null;
 
         // Persist to localStorage
         storage.set(TOKEN_KEY, action.payload.token);
-        storage.set(USER_KEY, action.payload.user);
+        storage.set(USER_KEY, user);
 
         toast.success('Registration successful! Welcome to our platform.');
       })

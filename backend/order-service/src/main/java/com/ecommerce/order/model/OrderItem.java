@@ -4,7 +4,9 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
@@ -25,8 +27,11 @@ public class OrderItem {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "order_id", nullable = false)
-    private Long orderId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "order_id", nullable = false)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private Order order;
 
     @Column(name = "product_id", nullable = false)
     private Long productId;
@@ -51,5 +56,13 @@ public class OrderItem {
      */
     public BigDecimal getSubtotal() {
         return price.multiply(BigDecimal.valueOf(quantity));
+    }
+
+    /**
+     * Convenience accessor for the owning order's ID, used by API responses that should not
+     * serialize the full Order graph.
+     */
+    public Long getOrderId() {
+        return order != null ? order.getId() : null;
     }
 }

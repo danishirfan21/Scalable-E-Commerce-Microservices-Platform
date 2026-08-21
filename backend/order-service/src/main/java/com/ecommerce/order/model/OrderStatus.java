@@ -27,5 +27,10 @@ public enum OrderStatus {
     /**
      * Order has been cancelled
      */
-    CANCELLED
+    CANCELLED,
+
+    /**
+     * Inventory could not be reserved for one or more items; the order was never confirmed
+     */
+    REJECTED
 }

@@ -17,13 +17,16 @@ import java.util.Set;
 public class AuthResponse {
 
     private String token;
+    @Builder.Default
     private String type = "Bearer";
+    private Long id;
     private String username;
     private String email;
     private Set<String> roles;
 
-    public AuthResponse(String token, String username, String email, Set<String> roles) {
+    public AuthResponse(String token, Long id, String username, String email, Set<String> roles) {
         this.token = token;
+        this.id = id;
         this.username = username;
         this.email = email;
         this.roles = roles;

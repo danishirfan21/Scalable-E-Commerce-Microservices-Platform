@@ -1,6 +1,6 @@
 package com.ecommerce.user.controller;
 
-import com.ecommerce.user.dto.RegisterRequest;
+import com.ecommerce.user.dto.UpdateProfileRequest;
 import com.ecommerce.user.dto.UserResponse;
 import com.ecommerce.user.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,7 +22,7 @@ import java.util.List;
  * Handles user management operations
  */
 @RestController
-@RequestMapping("/users")
+@RequestMapping("/api/users")
 @Tag(name = "Users", description = "User management APIs")
 @SecurityRequirement(name = "bearerAuth")
 public class UserController {
@@ -41,12 +42,29 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or #id == authentication.principal.id")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('ORDER_SERVICE') or #id.toString() == authentication.principal")
     @Operation(summary = "Get user by ID")
     public ResponseEntity<UserResponse> getUserById(@PathVariable Long id) {
         logger.info("GET /users/{} - Get user by ID", id);
         UserResponse user = userService.getUserById(id);
         return ResponseEntity.ok(user);
+    }
+
+    @GetMapping("/profile")
+    @Operation(summary = "Get the currently authenticated user's profile")
+    public ResponseEntity<UserResponse> getCurrentUserProfile(Authentication authentication) {
+        Long userId = Long.valueOf(authentication.getPrincipal().toString());
+        logger.info("GET /users/profile - Get current user profile (id={})", userId);
+        return ResponseEntity.ok(userService.getUserById(userId));
+    }
+
+    @PutMapping("/profile")
+    @Operation(summary = "Update the currently authenticated user's profile")
+    public ResponseEntity<UserResponse> updateCurrentUserProfile(Authentication authentication,
+                                                                   @Valid @RequestBody UpdateProfileRequest request) {
+        Long userId = Long.valueOf(authentication.getPrincipal().toString());
+        logger.info("PUT /users/profile - Update current user profile (id={})", userId);
+        return ResponseEntity.ok(userService.updateUser(userId, request));
     }
 
     @GetMapping("/username/{username}")
@@ -58,11 +76,11 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or #id == authentication.principal.id")
+    @PreAuthorize("hasRole('ADMIN') or #id.toString() == authentication.principal")
     @Operation(summary = "Update user")
     public ResponseEntity<UserResponse> updateUser(
             @PathVariable Long id,
-            @Valid @RequestBody RegisterRequest request) {
+            @Valid @RequestBody UpdateProfileRequest request) {
         logger.info("PUT /users/{} - Update user", id);
         UserResponse user = userService.updateUser(id, request);
         return ResponseEntity.ok(user);

@@ -1,6 +1,7 @@
 package com.ecommerce.user.config;
 
 import com.ecommerce.user.security.CustomUserDetailsService;
+import com.ecommerce.user.security.GatewayAuthenticationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,6 +16,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -23,9 +25,14 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Security Configuration
- * Configures Spring Security with JWT authentication
- * Implements Strategy pattern for authentication
+ * Security Configuration.
+ *
+ * Auth is terminated at the API Gateway: the gateway validates the JWT once and forwards
+ * X-User-Id / X-User-Roles headers to downstream services (see GatewayAuthenticationFilter).
+ * This service still owns local username/password authentication for /auth/login (via
+ * CustomUserDetailsService + DaoAuthenticationProvider) since it is the identity provider
+ * that issues the JWT in the first place; every other endpoint trusts the gateway headers
+ * instead of re-parsing the JWT.
  */
 @Configuration
 @EnableWebSecurity
@@ -62,12 +69,13 @@ public class SecurityConfig {
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .anyRequest().authenticated()
                 )
-                .authenticationProvider(authenticationProvider());
+                .authenticationProvider(authenticationProvider())
+                .addFilterBefore(new GatewayAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

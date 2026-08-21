@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -85,23 +86,20 @@ public class OrderController {
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Get all orders (Admin only)", description = "Retrieves all orders in the system")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Orders retrieved successfully"),
             @ApiResponse(responseCode = "403", description = "Access denied")
     })
-    public ResponseEntity<List<OrderResponse>> getAllOrders(
-            @Parameter(description = "User role from authentication token")
-            @RequestHeader(value = "X-User-Role", required = false) String userRole) {
-
+    public ResponseEntity<List<OrderResponse>> getAllOrders() {
         log.info("Fetching all orders (Admin access)");
-        // In a real application, you would check the user role here
-        // For now, we'll allow the request to proceed
         List<OrderResponse> orders = orderService.getAllOrders();
         return ResponseEntity.ok(orders);
     }
 
     @PutMapping("/{orderId}/status")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Update order status (Admin only)", description = "Updates the status of an order")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Order status updated successfully"),
@@ -158,6 +156,7 @@ public class OrderController {
     }
 
     @GetMapping("/status/{status}")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Get orders by status (Admin only)", description = "Retrieves all orders with a specific status")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Orders retrieved successfully"),
@@ -168,8 +167,7 @@ public class OrderController {
             @PathVariable OrderStatus status) {
 
         log.info("Fetching orders with status: {}", status);
-        // This would typically be restricted to admin users
-        // For simplicity, we're not implementing full authorization logic here
-        return ResponseEntity.ok(List.of());
+        List<OrderResponse> orders = orderService.getOrdersByStatus(status);
+        return ResponseEntity.ok(orders);
     }
 }

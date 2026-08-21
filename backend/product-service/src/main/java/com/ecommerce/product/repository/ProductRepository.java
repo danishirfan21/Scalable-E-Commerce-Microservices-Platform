@@ -2,6 +2,7 @@ package com.ecommerce.product.repository;
 
 import com.ecommerce.product.model.Product;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -61,4 +62,22 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
      */
     @Query("SELECT p FROM Product p WHERE p.category = :category AND p.quantity > 0")
     List<Product> findByCategoryAndInStock(@Param("category") String category);
+
+    /**
+     * Atomically decrements stock only if enough is available. The WHERE clause makes this a
+     * single conditional UPDATE at the database level, so two concurrent requests for the last
+     * unit of stock cannot both succeed: exactly one UPDATE affects a row (returns 1), the other
+     * affects zero rows (returns 0), with no read-then-write race window. This is the mechanism
+     * that prevents overselling under concurrent order creation.
+     */
+    @Modifying
+    @Query("UPDATE Product p SET p.quantity = p.quantity - :amount WHERE p.id = :id AND p.quantity >= :amount")
+    int decrementStockIfAvailable(@Param("id") Long id, @Param("amount") int amount);
+
+    /**
+     * Atomically increments stock (used to restore inventory on order cancellation/rejection).
+     */
+    @Modifying
+    @Query("UPDATE Product p SET p.quantity = p.quantity + :amount WHERE p.id = :id")
+    int incrementStock(@Param("id") Long id, @Param("amount") int amount);
 }

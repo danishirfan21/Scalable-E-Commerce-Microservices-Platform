@@ -10,18 +10,18 @@ eureka:
     register-with-eureka: false
     fetch-registry: false
     service-url:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: http://${EUREKA_HOSTNAME:localhost}:8761/eureka/
   server:
     enable-self-preservation: true
     eviction-interval-timer-in-ms: 60000
   instance:
-    hostname: localhost
+    hostname: ${EUREKA_HOSTNAME:localhost}
 
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics
+        include: health,info,metrics,prometheus
   endpoint:
     health:
       show-details: always

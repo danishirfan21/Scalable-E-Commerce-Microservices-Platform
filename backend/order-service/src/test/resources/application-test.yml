@@ -1,0 +1,22 @@
+# Test configuration - datasource is overridden per-test via @DynamicPropertySource
+# (Testcontainers Postgres); this just disables things that would otherwise try to reach
+# real infrastructure during tests.
+spring:
+  kafka:
+    bootstrap-servers: ${spring.embedded.kafka.brokers:localhost:9092}
+  cloud:
+    config:
+      enabled: false
+      import-check:
+        enabled: false
+  config:
+    import: "optional:configserver:"
+
+eureka:
+  client:
+    enabled: false
+
+logging:
+  level:
+    root: INFO
+    com.ecommerce.order: DEBUG

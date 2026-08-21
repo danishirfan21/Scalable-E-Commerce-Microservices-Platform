@@ -51,10 +51,10 @@ export const fetchUserOrders = createAsyncThunk(
  */
 export const fetchAllOrders = createAsyncThunk(
   'orders/fetchAllOrders',
-  async ({ page = 0, size = 20 }: { page?: number; size?: number }, { rejectWithValue }) => {
+  async (_: void, { rejectWithValue }) => {
     try {
-      const response = await orderAPI.getAllOrders(page, size);
-      return response.content;
+      const response = await orderAPI.getAllOrders();
+      return response;
     } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to fetch all orders');
     }
