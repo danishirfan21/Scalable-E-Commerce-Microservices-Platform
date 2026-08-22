@@ -232,8 +232,18 @@ for svc_port in "user-service:8081" "product-service:8082" "order-service:8083";
   # Capture the full body before grepping: with `set -o pipefail`, piping straight into
   # `grep -q` lets grep close the pipe as soon as it matches, SIGPIPE-ing curl mid-response
   # on these large (100KB+) bodies and failing the pipeline even though grep did match.
-  metrics_body=$(curl -sf "http://localhost:$port/actuator/prometheus")
-  if echo "$metrics_body" | grep -q "jvm_memory_used_bytes"; then
+  # Retry a few times: under heavy host load right after the order-flow steps, a service's
+  # first scrape can hit a transient connection blip even though it's otherwise healthy.
+  metrics_ok=0
+  for attempt in 1 2 3 4 5; do
+    metrics_body=$(curl -sf "http://localhost:$port/actuator/prometheus" 2>/dev/null)
+    if echo "$metrics_body" | grep -q "jvm_memory_used_bytes"; then
+      metrics_ok=1
+      break
+    fi
+    sleep 2
+  done
+  if [ "$metrics_ok" = "1" ]; then
     pass "$svc /actuator/prometheus exposes real metrics"
   else
     fail "$svc /actuator/prometheus did not return expected metrics"
