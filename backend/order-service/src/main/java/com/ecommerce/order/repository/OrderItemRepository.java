@@ -18,7 +18,10 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
      * @param orderId the order ID
      * @return list of order items
      */
-    List<OrderItem> findByOrderId(Long orderId);
+    // Explicit nested-path syntax (Order_Id, not OrderId): OrderItem.getOrderId() is a plain
+    // convenience method, not a mapped attribute, and shadows the derived-query parser's usual
+    // fallback of splitting "orderId" into the "order.id" association traversal.
+    List<OrderItem> findByOrder_Id(Long orderId);
 
     /**
      * Finds all order items for a specific product.
