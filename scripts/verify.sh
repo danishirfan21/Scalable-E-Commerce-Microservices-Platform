@@ -165,7 +165,7 @@ poll_order_status() {
   for ((i = 1; i <= attempts; i++)); do
     local status
     status=$(curl -sf "$BASE_URL/api/orders/$order_id" -H "Authorization: Bearer $token" | jq -r '.status // empty')
-    echo "  attempt $i/$attempts: status=$status"
+    echo "  attempt $i/$attempts: status=$status" >&2
     if [ "$status" = "$3" ]; then
       echo "$status"
       return 0
