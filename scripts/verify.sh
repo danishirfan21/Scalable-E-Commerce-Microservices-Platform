@@ -62,7 +62,11 @@ log "Building frontend (npm ci, lint, build)"
 if [ "$SKIP_BUILD" = "true" ]; then
   echo "  skipped (SKIP_BUILD=true)"
 else
-  if (cd frontend && npm ci && npm run lint && npm run build); then pass "frontend build"; else die "frontend build failed"; fi
+  # CI=false: GitHub Actions sets CI=true by default, which makes CRA's build treat every
+  # ESLint *warning* as a build-blocking error - including the pre-existing no-explicit-any
+  # warnings already accepted as a known baseline (see README "Known limitations"). The lint
+  # step just above already runs separately and would fail on any real error.
+  if (cd frontend && npm ci && npm run lint && CI=false npm run build); then pass "frontend build"; else die "frontend build failed"; fi
 fi
 
 # ---------------------------------------------------------------------------

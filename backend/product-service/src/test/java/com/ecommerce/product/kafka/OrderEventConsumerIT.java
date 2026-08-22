@@ -10,8 +10,13 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.serializer.ErrorHandlingDeserializer;
+import org.springframework.kafka.support.serializer.JsonDeserializer;
+import org.springframework.kafka.test.EmbeddedKafkaBroker;
 import org.springframework.kafka.test.context.EmbeddedKafka;
+import org.springframework.kafka.test.utils.KafkaTestUtils;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -77,9 +82,9 @@ class OrderEventConsumerIT {
     private KafkaTemplate<Object, Object> kafkaTemplate;
 
     @Autowired
-    private org.springframework.kafka.core.ConsumerFactory<Object, Object> consumerFactory;
+    private EmbeddedKafkaBroker embeddedKafkaBroker;
 
-    private org.springframework.kafka.listener.KafkaMessageListenerContainer<Object, Object> resultListenerContainer;
+    private org.springframework.kafka.listener.KafkaMessageListenerContainer<String, InventoryReservationResultEvent> resultListenerContainer;
 
     @AfterEach
     void stopResultListenerContainer() {
@@ -94,20 +99,27 @@ class OrderEventConsumerIT {
 
     private BlockingQueue<InventoryReservationResultEvent> captureResultEvents() {
         BlockingQueue<InventoryReservationResultEvent> queue = new LinkedBlockingQueue<>();
+
+        // A dedicated consumer factory, not the app's shared @Autowired one: that factory's
+        // JsonDeserializer is hardcoded (via spring.json.value.default.type +
+        // use.type.headers=false) to always deserialize as OrderCreatedEvent, because that's the
+        // only type the real @KafkaListener ever needs on the order.created topic. Reusing it
+        // here against inventory.reservation.result silently produced OrderCreatedEvent objects
+        // instead of InventoryReservationResultEvent ones, so `instanceof
+        // InventoryReservationResultEvent` was always false and every message was dropped.
+        var deserializer = new ErrorHandlingDeserializer<>(new JsonDeserializer<>(InventoryReservationResultEvent.class, false));
+        var consumerProps = KafkaTestUtils.consumerProps(
+                "order-event-consumer-it-" + System.nanoTime(), "false", embeddedKafkaBroker);
+        var testConsumerFactory = new DefaultKafkaConsumerFactory<String, InventoryReservationResultEvent>(
+                consumerProps, new org.apache.kafka.common.serialization.StringDeserializer(), deserializer);
+
         var containerProperties =
                 new org.springframework.kafka.listener.ContainerProperties(KafkaTopics.INVENTORY_RESERVATION_RESULT);
-        // A distinct group id, not "product-service" (the real @KafkaListener's group): sharing a
-        // group id between this ad-hoc test listener and the app's own listener forces a full
-        // consumer-group rebalance on every join/leave of either one, which was making this
-        // listener's partition assignment unreliable within the poll window.
-        containerProperties.setGroupId("order-event-consumer-it-" + System.nanoTime());
         var container = new org.springframework.kafka.listener.KafkaMessageListenerContainer<>(
-                consumerFactory, containerProperties);
-        container.setupMessageListener((org.springframework.kafka.listener.MessageListener<Object, Object>) record -> {
-            if (record.value() instanceof InventoryReservationResultEvent event) {
-                queue.add(event);
-            }
-        });
+                testConsumerFactory, containerProperties);
+        container.setupMessageListener(
+                (org.springframework.kafka.listener.MessageListener<String, InventoryReservationResultEvent>)
+                        record -> queue.add(record.value()));
         container.start();
         org.springframework.kafka.test.utils.ContainerTestUtils.waitForAssignment(container, 3);
         resultListenerContainer = container;
