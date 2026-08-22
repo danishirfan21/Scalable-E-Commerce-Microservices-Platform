@@ -6,8 +6,9 @@ FROM node:18-alpine AS build
 # Set working directory
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Copy package files (.npmrc enables legacy-peer-deps, required for react-scripts@5.0.1 +
+# typescript@5.x since react-scripts' peer-dependency metadata was never updated past TS ^4)
+COPY package*.json .npmrc ./
 
 # Install ALL dependencies (including devDependencies) - the CRA/TypeScript build itself
 # needs @types/*, react-scripts, etc, which --only=production would strip out.
