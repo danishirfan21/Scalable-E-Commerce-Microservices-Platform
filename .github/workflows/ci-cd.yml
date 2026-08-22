@@ -214,6 +214,23 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: 'maven'
+
+      # Trivy's fs scan resolves each pom.xml's dependency tree against Maven Central if it isn't
+      # already in the local ~/.m2 cache. Without this, repeated CI runs from the shared GitHub
+      # Actions runner IP pool get rate-limited by Maven Central mid-scan ("The repository blocks
+      # all subsequent requests from this IP") - Trivy's own error message suggests this fix.
+      - name: Warm Maven dependency cache for Trivy
+        run: |
+          for module in config-server eureka-server api-gateway user-service product-service order-service; do
+            (cd backend/$module && mvn -B -q dependency:resolve) || true
+          done
+
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
