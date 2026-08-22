@@ -86,7 +86,8 @@ log "Waiting for services to become healthy"
 wait_for_health() {
   local name="$1" url="$2" attempts=60
   for ((i = 1; i <= attempts; i++)); do
-    if curl -sf "$url" | grep -q '"status":"UP"'; then
+    health_body=$(curl -sf "$url" 2>/dev/null)
+    if [[ "$health_body" == *'"status":"UP"'* ]]; then
       pass "$name healthy"
       return 0
     fi
@@ -243,18 +244,17 @@ REJECTED_CHECK=$(curl -sf "$BASE_URL/api/orders/$REJECT_ORDER_ID" -H "Authorizat
 log "Verifying Prometheus metrics endpoints are exposed"
 for svc_port in "user-service:8081" "product-service:8082" "order-service:8083"; do
   svc="${svc_port%%:*}"; port="${svc_port##*:}"
-  # Capture the full body before grepping: with `set -o pipefail`, piping straight into
-  # `grep -q` lets grep close the pipe as soon as it matches, SIGPIPE-ing curl mid-response
-  # on these large (100KB+) bodies and failing the pipeline even though grep did match.
+  # Pure bash substring match - no `| grep` at all. With `set -o pipefail`, piping this large
+  # (100KB+) body into `grep -q` (directly, or via an intermediate `echo`/herestring) lets grep
+  # close the pipe as soon as it matches, SIGPIPE-ing the writer mid-stream and failing the
+  # pipeline even though the match was genuinely found. A plain bash pattern test has no
+  # subprocess and no pipe, so there's nothing for grep to SIGPIPE.
   # Retry a few times: under heavy host load right after the order-flow steps, a service's
   # first scrape can hit a transient connection blip even though it's otherwise healthy.
-  # On a resource-constrained CI runner this can take longer than a couple of seconds to
-  # clear - seen in practice taking longer than 5 attempts x 2s for one service while its
-  # neighbor on the very next loop iteration succeeded immediately.
   metrics_ok=0
   for attempt in 1 2 3 4 5 6 7 8 9 10; do
     metrics_body=$(curl -sf "http://localhost:$port/actuator/prometheus" 2>/dev/null)
-    if echo "$metrics_body" | grep -q "jvm_memory_used_bytes"; then
+    if [[ "$metrics_body" == *"jvm_memory_used_bytes"* ]]; then
       metrics_ok=1
       break
     fi
@@ -270,8 +270,15 @@ done
 # ---------------------------------------------------------------------------
 log "Verifying Kafka topics were created (order.created, inventory.reservation.result)"
 KAFKA_TOPICS=$(docker compose exec -T kafka /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list 2>/dev/null || true)
-if echo "$KAFKA_TOPICS" | grep -q "^order.created$"; then pass "topic order.created exists"; else fail "topic order.created not found"; fi
-if echo "$KAFKA_TOPICS" | grep -q "^inventory.reservation.result$"; then pass "topic inventory.reservation.result exists"; else fail "topic inventory.reservation.result not found"; fi
+topic_exists() {
+  local target="$1" line
+  while IFS= read -r line; do
+    [ "$line" = "$target" ] && return 0
+  done <<< "$KAFKA_TOPICS"
+  return 1
+}
+if topic_exists "order.created"; then pass "topic order.created exists"; else fail "topic order.created not found"; fi
+if topic_exists "inventory.reservation.result"; then pass "topic inventory.reservation.result exists"; else fail "topic inventory.reservation.result not found"; fi
 
 # ---------------------------------------------------------------------------
 if [ "$FAILED" -eq 0 ]; then
