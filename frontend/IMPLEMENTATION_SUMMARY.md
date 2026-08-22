@@ -1,10 +1,15 @@
 # Frontend Implementation Summary
 
-Complete production-grade React + TypeScript frontend for E-Commerce Platform
+> **Note:** This is a development-time implementation log, written before the project was audited
+> and verified end-to-end. Claims and numbers below (including test coverage) may be stale or
+> inflated. For the current, verified state of this frontend, see the root
+> [`README.md`](../README.md) and [`docs/VERIFICATION_REPORT.md`](../docs/VERIFICATION_REPORT.md).
+
+React + TypeScript frontend for the E-Commerce Platform
 
 ## Overview
 
-A fully functional, enterprise-ready frontend application built with modern technologies and best practices.
+A frontend application built with React, Redux Toolkit, and Material UI.
 
 ## What Was Built
 
@@ -386,11 +391,11 @@ The codebase is structured to easily add:
 ## Success Metrics
 
 ### Code Quality
-- ✓ 100% TypeScript coverage
-- ✓ Zero TypeScript errors
-- ✓ ESLint passing
-- ✓ Prettier formatted
-- ✓ Test coverage >50%
+- ✓ Written entirely in TypeScript
+- ✓ Zero TypeScript errors (`tsc --noEmit`)
+- ✓ ESLint passing (0 errors)
+- Test coverage is intentionally light (2 test files covering the login/auth flow) - see the root
+  README's "Known limitations"
 
 ### Functionality
 - ✓ All user stories implemented
@@ -416,7 +421,7 @@ The codebase is structured to easily add:
 
 ## Conclusion
 
-This frontend implementation represents a **production-grade, enterprise-ready** React application with:
+This frontend implementation is a React application with:
 
 - **Modern Stack**: React 18, TypeScript 5, Redux Toolkit
 - **Best Practices**: Clean architecture, type safety, error handling
@@ -425,10 +430,10 @@ This frontend implementation represents a **production-grade, enterprise-ready**
 - **Deployment**: Docker ready with nginx
 - **Scalability**: Feature-based structure, easy to extend
 
-The application is **ready to deploy** and can be extended with additional features as needed.
+The application builds and runs via Docker as described in the root README, with the caveats
+listed in that README's "What this does NOT claim" and "Known limitations" sections.
 
 ---
 
-**Total Development Effort**: ~4,200 lines of production code + 35,000 words of documentation
-**Quality Level**: Enterprise/Production Grade
-**Status**: ✓ Complete and Ready for Use
+See the root [`README.md`](../README.md) and [`docs/VERIFICATION_REPORT.md`](../docs/VERIFICATION_REPORT.md)
+for what has actually been verified about this application.

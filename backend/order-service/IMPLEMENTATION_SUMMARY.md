@@ -1,7 +1,14 @@
 # Order Service - Implementation Summary
 
+> **Note:** This is a development-time implementation log, written before the project was audited
+> and verified end-to-end. File/line counts below may be stale, and any "production-ready" language
+> in this document does not reflect the project's actual status. For the current, verified state of
+> this service, see the root [`README.md`](../../README.md) and
+> [`docs/VERIFICATION_REPORT.md`](../../docs/VERIFICATION_REPORT.md).
+
 ## Overview
-A complete, production-ready Order Service microservice for the E-Commerce platform has been successfully created.
+A complete Order Service microservice for the E-Commerce platform has been created, covering order
+creation, Kafka-driven inventory reservation, and status management.
 
 ## Total Files Created: 36
 
@@ -536,7 +543,7 @@ All requirements have been successfully implemented:
 
 ## Conclusion
 
-The Order Service is **production-ready** with:
+The Order Service implements:
 - ✅ Clean architecture
 - ✅ Proper error handling
 - ✅ Security configuration

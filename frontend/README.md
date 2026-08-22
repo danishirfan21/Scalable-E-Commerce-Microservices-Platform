@@ -1,6 +1,8 @@
 # E-Commerce Platform - Frontend
 
-A production-grade React + TypeScript frontend application for the E-Commerce microservices platform.
+A React + TypeScript frontend for the E-Commerce microservices platform. For the project's overall
+status and what has actually been verified, see the root [`README.md`](../README.md) and
+[`docs/VERIFICATION_REPORT.md`](../docs/VERIFICATION_REPORT.md).
 
 ## Features
 

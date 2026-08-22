@@ -1,13 +1,15 @@
 # E-Commerce Microservices Platform
 
-A Spring Boot microservices e-commerce backend (product catalog, inventory, orders, users) with
-a Kafka-driven async order-confirmation flow, a React/TypeScript frontend, and a Docker Compose
-stack that actually builds and runs end to end.
+A Java 17 / Spring Boot microservices e-commerce backend (product catalog, inventory, orders,
+users) with a Kafka-driven, event-driven order-confirmation flow and concurrency-safe inventory,
+a React/TypeScript frontend, and a Docker Compose stack (PostgreSQL, Kafka, Prometheus, Grafana)
+that actually builds and runs end to end.
 
-This project was built, then audited and substantially repaired against its own README claims -
-see [`docs/VERIFICATION_REPORT.md`](docs/VERIFICATION_REPORT.md) for exactly what was broken, what
-was fixed, and what commands were actually run to prove it. This README describes the system as
-it exists now, not as originally advertised.
+**Verified, not just described:** this project was built, then audited and repaired, then proven
+against a real Docker/Kafka/PostgreSQL stack in a live GitHub Codespace - not unit tests in
+isolation, not a static review. See [`docs/VERIFICATION_REPORT.md`](docs/VERIFICATION_REPORT.md)
+for exactly what was broken, what was fixed, and the full command-by-command evidence log. This
+README describes the system as it exists now, not as originally advertised.
 
 ## What this actually demonstrates
 
@@ -176,6 +178,44 @@ cd frontend && npm ci && npm run lint && npm test -- --watchAll=false && npm run
 - **Observability**: Micrometer + Prometheus + Grafana
 - **Infra**: Docker Compose (primary, verified), Kubernetes manifests (statically validated only)
 
+## What is actually verified
+
+A full live run of `docker compose up --build` + `scripts/verify_codespaces.sh` against a real
+GitHub Codespace (Linux, JDK 17, Docker-in-Docker) confirmed all of the following:
+
+- `docker compose up --build` succeeds and all 13 containers reach a healthy state
+- Auth works end to end (register + login, both admin and customer roles)
+- Product creation and inventory (`PATCH .../inventory`) work
+- Placing an order publishes `OrderCreated` and product-service consumes it
+- A successful order reaches `CONFIRMED` via the real Kafka round trip (observed in ~4s)
+- Stock decreases by exactly the reserved amount after confirmation
+- An over-quantity order is correctly `REJECTED`, and stock is left unchanged
+- `/actuator/prometheus` exposes real metrics on all three domain services
+- Both Kafka topics (`order.created`, `inventory.reservation.result`) exist and are used
+
+Full command-by-command evidence, including the exact defects this live run surfaced, is in
+[`docs/VERIFICATION_REPORT.md`](docs/VERIFICATION_REPORT.md).
+
+## Interesting bugs found during live verification
+
+Runtime verification against real infrastructure caught defects that static review and unit tests
+missed entirely:
+
+- **Frontend `npm ci` dependency conflict** - `typescript@5.x` vs. `react-scripts@5.0.1`'s stale
+  peer-dependency metadata (last updated for TS ^4). Fixed with `legacy-peer-deps=true`.
+- **Docker build silently skipped that fix** - the frontend `Dockerfile` copied `package*.json`
+  but not `.npmrc` before `npm ci`, so the host build worked but the containerized one didn't.
+- **`order-service` crashed on every startup** - a Spring Data derived query,
+  `findByOrderId(Long)`, failed because `OrderItem` has a plain `getOrderId()` convenience method
+  (not a mapped attribute) that shadowed the parser's usual `order.id` nested-path fallback.
+- **The verification script's own polling helper was broken** - it echoed progress lines to
+  stdout, which got captured into the same variable as its actual return value, so the
+  CONFIRMED/REJECTED check always failed even when the order flow worked correctly.
+- **`curl | grep -q` under `set -o pipefail`** - `grep -q`'s early exit on match sent `curl`
+  a SIGPIPE mid-response on a 100KB+ body, failing the pipeline even though the metric was there.
+- **JDK version drift across Codespaces sessions** - the default Codespaces image ships JDK 11;
+  the backend requires 17. A `.devcontainer/devcontainer.json` now pins JDK 17.
+
 ## Known limitations
 
 - No transactional outbox for the Kafka publish in `createOrder` - the DB write and the Kafka send
@@ -187,6 +227,12 @@ cd frontend && npm ci && npm run lint && npm test -- --watchAll=false && npm run
 - Frontend test coverage is intentionally light (2 test files) - it proves the build/type/lint
   pipeline works, not full UI coverage.
 - No rate limiting, no WAF, no mTLS between services - see "What this does NOT claim" above.
+- Authentication is self-issued JWT from `user-service`, not a real identity provider (no
+  Okta/Auth0/Keycloak/OAuth2 integration) - fine for a demo, not for production auth.
+- No load testing or benchmarking has been done - no throughput/latency numbers are claimed
+  anywhere in this repo, deliberately.
+- CI builds and runs `scripts/verify.sh` against the Compose stack, but does not screenshot-verify
+  Grafana panels - the Grafana dashboard is provisioned and reachable, not visually asserted in CI.
 - SonarCloud and AWS ECS deploy CI jobs are present but disabled by default (gated behind repo
   variables) since this repo doesn't ship the SonarCloud org or AWS infra they'd need - see
   `.github/workflows/ci-cd.yml`.

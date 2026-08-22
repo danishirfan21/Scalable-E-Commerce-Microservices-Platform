@@ -1,6 +1,10 @@
 # Frontend Implementation Checklist
 
-Complete verification of all implemented features and files.
+> **Note:** This is a development-time scaffold checklist, not a record of actual verification.
+> For what has genuinely been verified, see the root [`README.md`](../README.md) and
+> [`docs/VERIFICATION_REPORT.md`](../docs/VERIFICATION_REPORT.md).
+
+List of files and features implemented during development.
 
 ## Files Created ✓
 
@@ -393,12 +397,12 @@ Complete verification of all implemented features and files.
 - [x] Troubleshooting included
 - [x] Comments in code
 
-## Status: ✓ COMPLETE
+## Status
 
-All features implemented, tested, and documented.
-Ready for production deployment!
-
-**Total Items Completed: 250+**
+Initial feature scaffold complete. See the root README and
+[`docs/VERIFICATION_REPORT.md`](../docs/VERIFICATION_REPORT.md) for what has actually been
+verified, and the README's "What this does NOT claim" section for what this project explicitly
+is not.
 
 ---
 

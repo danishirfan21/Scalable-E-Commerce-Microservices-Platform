@@ -1,5 +1,9 @@
 # Order Service - Architecture Documentation
 
+> **Note:** This is a development-time architecture doc, written before the project was audited and
+> verified end-to-end. For the current, verified state of this service, see the root
+> [`README.md`](../../README.md) and [`docs/VERIFICATION_REPORT.md`](../../docs/VERIFICATION_REPORT.md).
+
 ## System Architecture
 
 ```
@@ -658,22 +662,10 @@ PersistentVolume → Logs (if needed)
 
 ## Performance Characteristics
 
-### Expected Latency
-- **Create Order**: 200-500ms (depends on external services)
-- **Get Order**: 50-100ms
-- **List Orders**: 100-200ms
-- **Update Status**: 50-100ms
-- **Process Payment**: 300-600ms (with inventory update)
-
-### Throughput
-- **Concurrent Users**: 100+ (with single instance)
-- **Requests per Second**: 50-100 (single instance)
-- **Scalability**: Linear with instances
-
-### Resource Usage
-- **Memory**: 512MB minimum, 1GB recommended
-- **CPU**: 0.5 core minimum, 1 core recommended
-- **Storage**: Minimal (database is external)
+No load testing or benchmarking has been performed against this service. The latency, throughput,
+and resource figures that previously appeared in this section were estimates, not measurements,
+and have been removed to avoid presenting fabricated numbers as fact. See "Known limitations" in
+the root [`README.md`](../../README.md) for what has and hasn't been verified.
 
 ---
 
