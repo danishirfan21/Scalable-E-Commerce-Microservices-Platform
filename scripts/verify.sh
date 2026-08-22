@@ -248,8 +248,11 @@ for svc_port in "user-service:8081" "product-service:8082" "order-service:8083";
   # on these large (100KB+) bodies and failing the pipeline even though grep did match.
   # Retry a few times: under heavy host load right after the order-flow steps, a service's
   # first scrape can hit a transient connection blip even though it's otherwise healthy.
+  # On a resource-constrained CI runner this can take longer than a couple of seconds to
+  # clear - seen in practice taking longer than 5 attempts x 2s for one service while its
+  # neighbor on the very next loop iteration succeeded immediately.
   metrics_ok=0
-  for attempt in 1 2 3 4 5; do
+  for attempt in 1 2 3 4 5 6 7 8 9 10; do
     metrics_body=$(curl -sf "http://localhost:$port/actuator/prometheus" 2>/dev/null)
     if echo "$metrics_body" | grep -q "jvm_memory_used_bytes"; then
       metrics_ok=1
