@@ -126,15 +126,79 @@ Hub push / AWS ECS deploy when the relevant repo variables are actually configur
 these would fail on every run in any fork without those secrets). **Not run yet** - this requires
 pushing to GitHub and watching Actions; do that and record the run URL + result here.
 
+## Live end-to-end verification (GitHub Codespaces, 2026-08-22)
+
+`docker compose up --build` and `scripts/verify_codespaces.sh` were run against a real GitHub
+Codespace (Linux, JDK 17, Docker-in-Docker) - not mocked, not statically reviewed. This surfaced
+and fixed six real defects that local review had missed:
+
+1. **`frontend/.npmrc` missing `legacy-peer-deps=true`** - `npm ci` failed with `ERESOLVE` because
+   `react-scripts@5.0.1`'s peer-dependency metadata predates TypeScript 5. Fixed in
+   [`0fffac4`](../../commit/0fffac4).
+2. **Frontend Dockerfile never copied `.npmrc` into the build stage** - so the fix above didn't
+   reach the containerized build, only the host build. Fixed in
+   [`25a503f`](../../commit/25a503f).
+3. **`order-service` crashed on every startup** - `OrderItemRepository.findByOrderId(Long)` failed
+   at context-refresh with `Unable to locate Attribute with the given name [orderId]`, because
+   `OrderItem.getOrderId()` is a plain convenience method, not a mapped attribute, and shadowed
+   Spring Data's derived-query parser. Fixed in [`33b4c2e`](../../commit/33b4c2e).
+4. **`scripts/verify.sh`'s own polling function was broken** - `poll_order_status()` echoed
+   progress lines to stdout, which got captured into the same variable as its actual return value
+   under command substitution, so the CONFIRMED/REJECTED check always failed even when the order
+   flow worked correctly. Fixed in [`6fd36cb`](../../commit/6fd36cb).
+5. **`curl | grep -q` under `set -o pipefail`** - the Prometheus metrics check piped `curl`
+   straight into `grep -q`, and `grep -q`'s early exit on match SIGPIPE'd `curl` mid-response on
+   these services' 100KB+ metric bodies, failing the pipeline even though the metric was present.
+   Fixed in [`508e802`](../../commit/508e802), with an added retry for transient connectivity
+   blips in [`3c78bbe`](../../commit/3c78bbe).
+6. **JDK version drift across Codespaces sessions** - the default Codespaces image ships JDK 11;
+   the backend requires 17. Added `.devcontainer/devcontainer.json` pinning
+   `mcr.microsoft.com/devcontainers/java:17-bullseye` in [`cbf016d`](../../commit/cbf016d) so new/
+   rebuilt Codespaces get the right JDK without a manual `apt-get install`.
+
+Final run output (`bash scripts/verify_codespaces.sh`), all 19 steps:
+
+```
+[1]  backend build                                          OK
+[2]  backend unit tests (25/25)                              OK
+[3]  frontend npm ci / lint / build                          OK
+[4]  docker compose config valid                              OK
+[5]  docker compose up --build (all 13 containers)             OK
+[6]  all 6 Spring Boot services healthy                        OK
+[7]  gateway health endpoint                                    OK
+[8]  admin registration                                          OK
+[9]  admin login                                                  OK
+[10] customer registration                                         OK
+[11] product creation (admin)                                       OK
+[12] inventory set via PATCH                                         OK
+[13] order creation (3 units)                                         OK
+[14] order reached CONFIRMED via real Kafka flow (2 polls, ~4s)         OK
+[15] stock correctly decremented 10 -> 7                                 OK
+[16] over-quantity order correctly REJECTED, stock unchanged               OK
+[17] order status queries return correct final state                        OK
+[18] /actuator/prometheus exposes real metrics on all 3 services               OK
+[19] Kafka topics order.created / inventory.reservation.result exist            OK
+
+=== ALL VERIFICATION STEPS PASSED ===
+```
+
+This is the first point at which the Kafka-driven order-confirmation flow, the concurrency-safe
+inventory decrement under a real HTTP+DB+Kafka stack, and the Prometheus metrics pipeline were
+proven against live infrastructure rather than described or unit-tested in isolation.
+
 ## Summary: verified vs. statically validated vs. future work
 
-**Verified (commands run on this machine, output inspected):**
+**Verified (commands run against real infrastructure, output inspected):**
 - Backend compiles and packages cleanly (`mvn clean package`), 25/25 unit tests pass
 - Frontend type-checks, lints clean, 10/10 unit tests pass, and produces a real production build
 - All backend and infra YAML/JSON config files are syntactically valid
+- `docker-compose.yml` builds and runs all 13 containers (6 services + 3 Postgres + Kafka +
+  Prometheus + Grafana + frontend) to a healthy state from a clean checkout
+- The full Kafka order flow (`OrderCreated` -> reservation -> `CONFIRMED`/`REJECTED`), the atomic
+  concurrency-safe inventory decrement, and the Prometheus metrics endpoints - see "Live
+  end-to-end verification" above
 
 **Statically validated only (authored and reviewed, not executed against live infra):**
-- `docker-compose.yml` topology and the Kafka/Postgres flow it wires together
 - Kubernetes manifests
 - The rewritten CI workflow
 
