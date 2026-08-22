@@ -185,6 +185,22 @@ X-User-Roles: ORDER_SERVICE
 
 **Note**: This endpoint is used by the Order Service during order processing.
 
+### 13. Restore Inventory
+```http
+PUT /api/products/{id}/restore-inventory?amount={amount}
+X-User-Id: order-service
+X-User-Roles: ORDER_SERVICE
+```
+
+**Parameters**:
+- `id` (path) - Product ID
+- `amount` (query) - Amount to restore (>= 1)
+
+**Response**: `200 OK`
+
+**Note**: Added alongside the Kafka-driven order flow, after this document was originally written -
+used to roll back a partial reservation when a multi-item order can't reserve all its items.
+
 ## Error Responses
 
 ### 400 Bad Request

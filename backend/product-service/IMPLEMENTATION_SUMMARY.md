@@ -84,7 +84,7 @@ management, inventory operations, and Kafka-driven order event consumption.
 
 ### 7. Controller Layer
 - ✅ **ProductController.java**: REST API with:
-  - 12 endpoints covering all operations
+  - 13 endpoints covering all operations
   - Swagger/OpenAPI annotations
   - @PreAuthorize for admin-only operations
   - Validation with @Valid
@@ -188,7 +188,7 @@ management, inventory operations, and Kafka-driven order event consumption.
   - Best practices
 
 - ✅ **API_ENDPOINTS.md**: Complete API reference with:
-  - All 12 endpoints documented
+  - All 13 endpoints documented
   - Request/response examples
   - Parameter descriptions
   - Error responses

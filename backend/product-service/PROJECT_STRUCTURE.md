@@ -231,7 +231,7 @@ product-service/
 
 ## API Endpoint Summary
 
-### Public Endpoints (11 endpoints)
+### Public Endpoints (6 endpoints)
 - GET /api/products (all)
 - GET /api/products/{id}
 - GET /api/products/sku/{sku}
@@ -246,8 +246,9 @@ product-service/
 - PATCH /api/products/{id}/inventory
 - GET /api/products/low-stock
 
-### Service Endpoints (1 endpoint)
+### Service Endpoints (2 endpoints)
 - PATCH /api/products/{id}/reduce-inventory
+- PUT /api/products/{id}/restore-inventory
 
 ## Database Schema
 
