@@ -1,15 +1,26 @@
 # E-Commerce Microservices Platform
 
+[![CI](https://github.com/danishirfan21/Scalable-E-Commerce-Microservices-Platform/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/danishirfan21/Scalable-E-Commerce-Microservices-Platform/actions/workflows/ci-cd.yml)
+
 A Java 17 / Spring Boot microservices e-commerce backend (product catalog, inventory, orders,
 users) with a Kafka-driven, event-driven order-confirmation flow and concurrency-safe inventory,
 a React/TypeScript frontend, and a Docker Compose stack (PostgreSQL, Kafka, Prometheus, Grafana)
 that actually builds and runs end to end.
 
 **Verified, not just described:** this project was built, then audited and repaired, then proven
-against a real Docker/Kafka/PostgreSQL stack in a live GitHub Codespace - not unit tests in
-isolation, not a static review. See [`docs/VERIFICATION_REPORT.md`](docs/VERIFICATION_REPORT.md)
-for exactly what was broken, what was fixed, and the full command-by-command evidence log. This
-README describes the system as it exists now, not as originally advertised.
+against a real Docker/Kafka/PostgreSQL stack - both in a live GitHub Codespace and in the GitHub
+Actions run linked by the badge above, which builds every service, runs the Testcontainers
+integration suite, and runs the full `docker compose up` + order-flow verification script end to
+end - not unit tests in isolation, not a static review. See
+[`docs/VERIFICATION_REPORT.md`](docs/VERIFICATION_REPORT.md) for exactly what was broken, what was
+fixed, and the full command-by-command evidence log. This README describes the system as it exists
+now, not as originally advertised.
+
+The CI badge reflects exactly what the linked workflow does and no more: it proves the build,
+tests, and `docker compose` verification pass on GitHub's runners. The SonarCloud, Docker Hub
+push, and AWS ECS deploy jobs in that same workflow are intentionally gated off (see "Known
+limitations" below) since this repo doesn't ship the external accounts they'd need - the badge
+does not claim those jobs ran.
 
 ## What this actually demonstrates
 

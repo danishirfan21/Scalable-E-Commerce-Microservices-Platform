@@ -186,6 +186,55 @@ This is the first point at which the Kafka-driven order-confirmation flow, the c
 inventory decrement under a real HTTP+DB+Kafka stack, and the Prometheus metrics pipeline were
 proven against live infrastructure rather than described or unit-tested in isolation.
 
+## GitHub Actions CI is green (2026-08-22)
+
+The rewritten `.github/workflows/ci-cd.yml` was pushed to `main` and, after fixing a further batch
+of defects the Codespaces run above couldn't catch (CI runs on different infrastructure with
+different resource constraints and a different default `CI` environment variable than an
+interactive Codespaces shell), reached a fully green run:
+[run 32586767228](../../actions/runs/32586767228) - `backend-build` (all 6 services),
+`frontend-build`, `integration-tests` (the same Testcontainers suite, run for the first time to
+actual completion in CI), `security-scan` (Trivy, SARIF uploaded to the Security tab), and
+`e2e-tests` (`docker compose up --build` + the full `scripts/verify.sh` order-flow script) all
+passed. `code-quality`, `docker-build-push`, `deploy-aws`, and `send-notifications` are correctly
+skipped - they're gated behind repo variables this repo doesn't set (no SonarCloud org, no Docker
+Hub/AWS credentials), not silently broken.
+
+Getting from the first attempt at this to green surfaced 9 additional real defects beyond what the
+Codespaces run found - CI's constrained, non-interactive GitHub-hosted runners behave differently
+enough from a Codespace that they exercised code paths and timing windows the Codespaces run
+never hit:
+
+- `dorny/test-reporter`'s default `fail-on-empty: true` failing on services with zero tests
+- Frontend Jest coverage thresholds (10% required) not matching actual measured coverage (~13%
+  statements, ~6.75% branches) with the project's intentionally-light 2-test-file suite
+- `OrderItemRepository`'s `@Modifying` query throwing `TransactionRequiredException` when called
+  directly from a test thread outside any `@Transactional` context (production code always goes
+  through the `@Transactional` service layer, so this never manifested there)
+- `@EmbeddedKafka(partitions = 1)` being silently overridden to 3 by `KafkaAdmin` reconciling
+  against the app's own `NewTopic` beans, breaking a hardcoded `waitForAssignment` assertion
+  written for a topic that would never actually have 1 partition
+- A leaked `KafkaMessageListenerContainer` in a test causing consumer-group rebalance churn
+  between test methods
+- A test's ad-hoc Kafka consumer reusing the app's `JsonDeserializer`, whose default-type mapping
+  is hardcoded to a *different* event class - the wrong type was silently produced, so an
+  `instanceof` check on it was always false and events were dropped without error
+- A fresh Kafka consumer group with `auto.offset.reset=earliest` re-reading a *previous* test's
+  already-published message off the topic before its own
+- GitHub Actions' `CI=true` making CRA's `npm run build` fail on lint *warnings* (not errors) that
+  were already an accepted, documented baseline
+- Eureka's default 30-second client-side registry-fetch interval meaning a service's own
+  `/actuator/health` reporting `UP` says nothing about whether *other* services have discovered it
+  yet - order-service's first Feign call to user-service raced this window
+- Two rounds of a `curl`/`echo` piped into `grep -q` under `set -o pipefail` SIGPIPE-ing the
+  writer on 100KB+ response bodies when grep matched and closed the pipe early - fixed by removing
+  all such pipes from the script in favor of plain bash string matching
+
+None of these were defects in the application's actual runtime behavior - every one was in test
+code or CI/verification tooling that had simply never been exercised to completion before. The
+underlying order flow, concurrency safety, and metrics pipeline were already proven correct by the
+Codespaces run; this pass proved the automated proof of that itself works.
+
 ## Summary: verified vs. statically validated vs. future work
 
 **Verified (commands run against real infrastructure, output inspected):**
@@ -197,10 +246,10 @@ proven against live infrastructure rather than described or unit-tested in isola
 - The full Kafka order flow (`OrderCreated` -> reservation -> `CONFIRMED`/`REJECTED`), the atomic
   concurrency-safe inventory decrement, and the Prometheus metrics endpoints - see "Live
   end-to-end verification" above
+- The GitHub Actions CI workflow itself - see "GitHub Actions CI is green" above
 
 **Statically validated only (authored and reviewed, not executed against live infra):**
 - Kubernetes manifests
-- The rewritten CI workflow
 
 **Future work / explicitly out of scope for this pass:**
 - Transactional outbox for the order-creation Kafka publish (see README "Known limitations")
