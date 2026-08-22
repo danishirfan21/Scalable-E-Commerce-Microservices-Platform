@@ -6,6 +6,7 @@ import com.ecommerce.product.event.OrderCreatedEvent;
 import com.ecommerce.product.event.OrderItemEvent;
 import com.ecommerce.product.model.Product;
 import com.ecommerce.product.repository.ProductRepository;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -46,7 +47,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * (de)serialization, the atomic stock update, and the response event all work together.
  */
 @Testcontainers
-@EmbeddedKafka(partitions = 1, topics = {KafkaTopics.ORDER_CREATED, KafkaTopics.INVENTORY_RESERVATION_RESULT})
+// partitions must match KafkaTopicConfig's PARTITIONS (3): Spring's KafkaAdmin reconciles the
+// embedded broker's topic partition count up to whatever the app's NewTopic beans declare at
+// context startup, so declaring a different count here just gets silently overridden - and then
+// waitForAssignment below has to match whatever the topic actually ends up with.
+@EmbeddedKafka(partitions = 3, topics = {KafkaTopics.ORDER_CREATED, KafkaTopics.INVENTORY_RESERVATION_RESULT})
 @SpringBootTest
 @ActiveProfiles("test")
 class OrderEventConsumerIT {
@@ -74,6 +79,19 @@ class OrderEventConsumerIT {
     @Autowired
     private org.springframework.kafka.core.ConsumerFactory<Object, Object> consumerFactory;
 
+    private org.springframework.kafka.listener.KafkaMessageListenerContainer<Object, Object> resultListenerContainer;
+
+    @AfterEach
+    void stopResultListenerContainer() {
+        // Each test creates its own consumer in the "product-service" group (the same group id
+        // the app's real @KafkaListener uses); leaving a container running after a test method
+        // returns causes rebalance churn for the next test's container in the same shared Spring
+        // context/embedded broker.
+        if (resultListenerContainer != null) {
+            resultListenerContainer.stop();
+        }
+    }
+
     private BlockingQueue<InventoryReservationResultEvent> captureResultEvents() {
         BlockingQueue<InventoryReservationResultEvent> queue = new LinkedBlockingQueue<>();
         var container = new org.springframework.kafka.listener.KafkaMessageListenerContainer<>(
@@ -85,7 +103,8 @@ class OrderEventConsumerIT {
             }
         });
         container.start();
-        org.springframework.kafka.test.utils.ContainerTestUtils.waitForAssignment(container, 1);
+        org.springframework.kafka.test.utils.ContainerTestUtils.waitForAssignment(container, 3);
+        resultListenerContainer = container;
         return queue;
     }
 

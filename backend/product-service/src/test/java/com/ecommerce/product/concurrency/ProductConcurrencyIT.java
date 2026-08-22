@@ -2,6 +2,7 @@ package com.ecommerce.product.concurrency;
 
 import com.ecommerce.product.model.Product;
 import com.ecommerce.product.repository.ProductRepository;
+import com.ecommerce.product.service.ProductService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -60,6 +61,9 @@ class ProductConcurrencyIT {
     @Autowired
     private ProductRepository productRepository;
 
+    @Autowired
+    private ProductService productService;
+
     @Test
     void concurrentReservation_exactlyOneSucceeds_whenStockIsOne() throws InterruptedException {
         Product product = productRepository.save(Product.builder()
@@ -106,8 +110,11 @@ class ProductConcurrencyIT {
             Thread.currentThread().interrupt();
             return;
         }
-        int rowsUpdated = productRepository.decrementStockIfAvailable(productId, 1);
-        if (rowsUpdated > 0) {
+        // Go through the service layer (as production code does), not the repository directly:
+        // the repository's @Modifying query has no transaction of its own to run in when called
+        // from a bare thread outside any @Transactional context.
+        boolean reserved = productService.reduceInventoryIfAvailable(productId, 1);
+        if (reserved) {
             successCount.incrementAndGet();
         } else {
             failureCount.incrementAndGet();

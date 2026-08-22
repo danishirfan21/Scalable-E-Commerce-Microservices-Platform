@@ -30,7 +30,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * so exactly once even if the event is redelivered (idempotent consumer).
  */
 @Testcontainers
-@EmbeddedKafka(partitions = 1, topics = {KafkaTopics.ORDER_CREATED, KafkaTopics.INVENTORY_RESERVATION_RESULT})
+// Must match KafkaTopicConfig's PARTITIONS (3) - Spring's KafkaAdmin reconciles the embedded
+// broker's topic partition count up to whatever the app's NewTopic beans declare at context
+// startup regardless of what's set here, so declaring a mismatched count is just misleading.
+@EmbeddedKafka(partitions = 3, topics = {KafkaTopics.ORDER_CREATED, KafkaTopics.INVENTORY_RESERVATION_RESULT})
 @SpringBootTest
 @ActiveProfiles("test")
 class InventoryResultConsumerIT {
