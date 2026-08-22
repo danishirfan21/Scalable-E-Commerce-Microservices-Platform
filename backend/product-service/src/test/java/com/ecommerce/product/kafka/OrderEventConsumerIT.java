@@ -94,9 +94,15 @@ class OrderEventConsumerIT {
 
     private BlockingQueue<InventoryReservationResultEvent> captureResultEvents() {
         BlockingQueue<InventoryReservationResultEvent> queue = new LinkedBlockingQueue<>();
+        var containerProperties =
+                new org.springframework.kafka.listener.ContainerProperties(KafkaTopics.INVENTORY_RESERVATION_RESULT);
+        // A distinct group id, not "product-service" (the real @KafkaListener's group): sharing a
+        // group id between this ad-hoc test listener and the app's own listener forces a full
+        // consumer-group rebalance on every join/leave of either one, which was making this
+        // listener's partition assignment unreliable within the poll window.
+        containerProperties.setGroupId("order-event-consumer-it-" + System.nanoTime());
         var container = new org.springframework.kafka.listener.KafkaMessageListenerContainer<>(
-                consumerFactory,
-                new org.springframework.kafka.listener.ContainerProperties(KafkaTopics.INVENTORY_RESERVATION_RESULT));
+                consumerFactory, containerProperties);
         container.setupMessageListener((org.springframework.kafka.listener.MessageListener<Object, Object>) record -> {
             if (record.value() instanceof InventoryReservationResultEvent event) {
                 queue.add(event);
