@@ -1,0 +1,17 @@
+{
+  "name": "E-Commerce Microservices Platform",
+  "image": "mcr.microsoft.com/devcontainers/java:17-bullseye",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "18"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "vscjava.vscode-java-pack"
+      ]
+    }
+  }
+}
