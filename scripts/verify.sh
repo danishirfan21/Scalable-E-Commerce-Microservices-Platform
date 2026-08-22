@@ -155,11 +155,21 @@ if [ "$STOCK_AFTER_SET" = "10" ]; then pass "stock set to 10"; else die "setting
 
 # ---------------------------------------------------------------------------
 log "Creating an order for 3 units (customer)"
-ORDER_RESPONSE=$(curl -sf -X POST "$BASE_URL/api/orders" \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $CUSTOMER_TOKEN" \
-  -d "{\"orderItems\":[{\"productId\":$PRODUCT_ID,\"quantity\":3}]}")
-ORDER_ID=$(echo "$ORDER_RESPONSE" | jq -r '.id // empty')
+# order-service's first request here is also its first Feign call to user-service - Eureka
+# clients only refresh their local peer registry every registry-fetch-interval-seconds (30s by
+# default), so a service's own /actuator/health reporting UP does not guarantee its peers'
+# Eureka caches have picked it up yet. Retry a few times rather than failing on the first
+# ConnectException from a Feign call racing that cache propagation window.
+ORDER_ID=""
+for attempt in 1 2 3 4 5 6; do
+  ORDER_RESPONSE=$(curl -sf -X POST "$BASE_URL/api/orders" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $CUSTOMER_TOKEN" \
+    -d "{\"orderItems\":[{\"productId\":$PRODUCT_ID,\"quantity\":3}]}")
+  ORDER_ID=$(echo "$ORDER_RESPONSE" | jq -r '.id // empty')
+  [ -n "$ORDER_ID" ] && break
+  sleep 5
+done
 ORDER_STATUS=$(echo "$ORDER_RESPONSE" | jq -r '.status // empty')
 if [ -n "$ORDER_ID" ]; then pass "order created (id=$ORDER_ID, status=$ORDER_STATUS)"; else die "order creation failed: $ORDER_RESPONSE"; fi
 

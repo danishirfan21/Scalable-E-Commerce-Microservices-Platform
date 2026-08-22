@@ -110,6 +110,11 @@ class OrderEventConsumerIT {
         var deserializer = new ErrorHandlingDeserializer<>(new JsonDeserializer<>(InventoryReservationResultEvent.class, false));
         var consumerProps = KafkaTestUtils.consumerProps(
                 "order-event-consumer-it-" + System.nanoTime(), "false", embeddedKafkaBroker);
+        // "latest", not KafkaTestUtils' default "earliest": each test method uses a brand-new
+        // consumer group with no committed offset, so with "earliest" the second test's listener
+        // would re-read the first test's already-published event off the topic before ever
+        // seeing its own - causing an orderId mismatch against unrelated leftover data.
+        consumerProps.put(org.apache.kafka.clients.consumer.ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
         var testConsumerFactory = new DefaultKafkaConsumerFactory<String, InventoryReservationResultEvent>(
                 consumerProps, new org.apache.kafka.common.serialization.StringDeserializer(), deserializer);
 
