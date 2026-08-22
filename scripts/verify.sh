@@ -229,7 +229,11 @@ REJECTED_CHECK=$(curl -sf "$BASE_URL/api/orders/$REJECT_ORDER_ID" -H "Authorizat
 log "Verifying Prometheus metrics endpoints are exposed"
 for svc_port in "user-service:8081" "product-service:8082" "order-service:8083"; do
   svc="${svc_port%%:*}"; port="${svc_port##*:}"
-  if curl -sf "http://localhost:$port/actuator/prometheus" | grep -q "jvm_memory_used_bytes"; then
+  # Capture the full body before grepping: with `set -o pipefail`, piping straight into
+  # `grep -q` lets grep close the pipe as soon as it matches, SIGPIPE-ing curl mid-response
+  # on these large (100KB+) bodies and failing the pipeline even though grep did match.
+  metrics_body=$(curl -sf "http://localhost:$port/actuator/prometheus")
+  if echo "$metrics_body" | grep -q "jvm_memory_used_bytes"; then
     pass "$svc /actuator/prometheus exposes real metrics"
   else
     fail "$svc /actuator/prometheus did not return expected metrics"
