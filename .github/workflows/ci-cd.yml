@@ -50,6 +50,10 @@ jobs:
           name: Test Report - ${{ matrix.service }}
           path: backend/${{ matrix.service }}/target/surefire-reports/*.xml
           reporter: java-junit
+          # config-server/eureka-server/api-gateway genuinely have zero test files (they're thin
+          # config/bootstrap services), so their surefire-reports dir is empty - that's expected,
+          # not a failure.
+          fail-on-empty: false
 
   # Integration tests with a real Docker daemon (Testcontainers: Postgres + embedded Kafka).
   # This is the job that actually proves the Kafka order-flow and concurrency behavior described
